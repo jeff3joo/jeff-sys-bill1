@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+import AppThemeProvider from "@/components/providers/theme-provider";
+
 export const metadata: Metadata = {
   title: "Jeff Systems",
   description: "Jeff Systems Billing Management",
@@ -13,7 +15,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <AppThemeProvider>{children}</AppThemeProvider>
+      </body>
     </html>
   );
 }
