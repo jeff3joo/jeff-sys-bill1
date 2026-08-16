@@ -5,3 +5,4 @@
 5. Setup MUI done
 6. Added Dashboard page
 7. Billing Page UI
+8. Authentication using Supabase
