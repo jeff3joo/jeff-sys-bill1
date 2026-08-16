@@ -4,3 +4,4 @@
 4. Cleaning Folder Structure
 5. Setup MUI done
 6. Added Dashboard page
+7. Billing Page UI
