@@ -6,3 +6,4 @@
 6. Added Dashboard page
 7. Billing Page UI
 8. Authentication using Supabase
+9. Authorization for routes added

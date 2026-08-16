@@ -13,7 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,6 +23,8 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const supabase = createClient();
 
   const handleLogin = async () => {
     setLoading(true);

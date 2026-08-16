@@ -9,13 +9,38 @@ import {
 	Stack,
 	Typography,
 } from "@mui/material";
-import { useState } from "react";
-
+import { useEffect, useState } from "react";
+import { getProducts } from "@/lib/products/product-service";
+import type { Product } from "@/types/product";
 import AppShell from "@/components/layout/app-shell";
 import ProductForm from "@/components/products/product-form";
 
 export default function ProductsPage() {
 	const [showForm, setShowForm] = useState(false);
+	const [products, setProducts] = useState<Product[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [errorMessage, setErrorMessage] = useState("");
+
+	useEffect(() => {
+		const loadProducts = async () => {
+			setLoading(true);
+			setErrorMessage("");
+
+			try {
+				const data = await getProducts();
+
+				setProducts(data);
+			} catch (error) {
+				console.error("Failed to load products:", error);
+
+				setErrorMessage("Unable to load products. Please try again.");
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		loadProducts();
+	}, []);
 
 	return (
 		<AppShell>
@@ -76,29 +101,35 @@ export default function ProductsPage() {
 
 				<Card>
 					<CardContent>
-						<Stack
-							spacing={2}
-							sx={{
-								minHeight: 240,
-								textAlign: "center",
-								alignItems: "center",
-								justifyContent: "center",
-							}}
-						>
-							{" "}
-							<Inventory2Outlined
-								sx={{
-									fontSize: 48,
-									color: "text.secondary",
-								}}
-							/>
-							<Typography variant='h6' sx={{ fontWeight: 600 }}>
-								No products displayed yet
+						{loading && (
+							<Typography color='text.secondary'>
+								Loading products...
 							</Typography>
-							<Typography variant='body2' color='text.secondary'>
-								The product list will be connected to Supabase next.
-							</Typography>
-						</Stack>
+						)}
+
+						{!loading && errorMessage && (
+							<Typography color='error'>{errorMessage}</Typography>
+						)}
+
+						{!loading && !errorMessage && (
+							<Stack spacing={2}>
+								<Typography variant='h6' sx={{ fontWeight: 700 }}>
+									Products loaded: {products.length}
+								</Typography>
+
+								{products.map((product) => (
+									<Box key={product.id}>
+										<Typography sx={{ fontWeight: 600 }}>
+											{product.name}
+										</Typography>
+
+										<Typography variant='body2' color='text.secondary'>
+											{product.type} · {product.category} · ₹{product.mrp}
+										</Typography>
+									</Box>
+								))}
+							</Stack>
+						)}
 					</CardContent>
 				</Card>
 			</Stack>

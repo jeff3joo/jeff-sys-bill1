@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import { z } from "zod";
 import { PRODUCT_CATEGORIES } from "@/lib/products/categories";
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 
 const productSchema = z.object({
 	name: z.string().trim().min(1, "Name is required"),
@@ -24,14 +24,24 @@ const productSchema = z.object({
 
 	category: z.string().min(1, "Category is required"),
 
-	mrp: z
-		.number({
-			message: "MRP is required",
-		})
-		.min(0, "MRP cannot be negative"),
+	mrp: z.preprocess(
+		(value) => {
+			if (value === "") {
+				return undefined;
+			}
+
+			return Number(value);
+		},
+		z
+			.number({
+				message: "MRP is required",
+			})
+			.min(0, "MRP cannot be negative"),
+	),
 });
 
-type ProductFormValues = z.infer<typeof productSchema>;
+type ProductFormInput = z.input<typeof productSchema>;
+type ProductFormOutput = z.output<typeof productSchema>;
 
 interface ProductFormProps {
 	onSuccess?: () => void;
@@ -46,21 +56,22 @@ export default function ProductForm({ onSuccess }: ProductFormProps) {
 		handleSubmit,
 		reset,
 		formState: { errors },
-	} = useForm<ProductFormValues>({
+	} = useForm<ProductFormInput, unknown, ProductFormOutput>({
 		resolver: zodResolver(productSchema),
 		defaultValues: {
 			name: "",
 			type: "product",
 			category: "",
-			mrp: 0,
+			mrp: "",
 		},
 	});
 
-	const onSubmit = async (data: ProductFormValues) => {
+	const onSubmit = async (data: ProductFormOutput) => {
 		setLoading(true);
 		setErrorMessage("");
 
-		try {
+        try {
+			const supabase = createClient();
 			const { error } = await supabase.from("products").insert({
 				name: data.name,
 				type: data.type,
@@ -156,7 +167,7 @@ export default function ProductForm({ onSuccess }: ProductFormProps) {
 							value={field.value}
 							onChange={(event) => {
 								field.onChange(
-									event.target.value === "" ? 0 : Number(event.target.value),
+									event.target.value === "" ? "" : Number(event.target.value),
 								);
 							}}
 							error={!!errors.mrp}
