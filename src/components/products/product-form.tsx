@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -16,6 +16,7 @@ import {
 import { z } from "zod";
 import { PRODUCT_CATEGORIES } from "@/lib/products/categories";
 import { createClient } from "@/lib/supabase/client";
+import { Product } from "@/types/product";
 
 const productSchema = z.object({
 	name: z.string().trim().min(1, "Name is required"),
@@ -44,10 +45,11 @@ type ProductFormInput = z.input<typeof productSchema>;
 type ProductFormOutput = z.output<typeof productSchema>;
 
 interface ProductFormProps {
+	product?: Product;
 	onSuccess?: () => void;
 }
 
-export default function ProductForm({ onSuccess }: ProductFormProps) {
+export default function ProductForm({ product, onSuccess }: ProductFormProps) {
 	const [loading, setLoading] = useState(false);
 	const [errorMessage, setErrorMessage] = useState("");
 
@@ -66,21 +68,57 @@ export default function ProductForm({ onSuccess }: ProductFormProps) {
 		},
 	});
 
+	useEffect(() => {
+		if (product) {
+			reset({
+				name: product.name,
+				type: product.type,
+				category: product.category,
+				mrp: product.mrp,
+			});
+		} else {
+			reset({
+				name: "",
+				type: "product",
+				category: "",
+				mrp: "",
+			});
+		}
+	}, [product, reset]);
+
 	const onSubmit = async (data: ProductFormOutput) => {
 		setLoading(true);
 		setErrorMessage("");
 
-        try {
+		try {
 			const supabase = createClient();
-			const { error } = await supabase.from("products").insert({
-				name: data.name,
-				type: data.type,
-				category: data.category,
-				mrp: data.mrp,
-			});
+			let error;
 
+			if (product) {
+				const result = await supabase
+					.from("products")
+					.update({
+						name: data.name,
+						type: data.type,
+						category: data.category,
+						mrp: data.mrp,
+						updated_at: new Date().toISOString(),
+					})
+					.eq("id", product.id);
+
+				error = result.error;
+			} else {
+				const result = await supabase.from("products").insert({
+					name: data.name,
+					type: data.type,
+					category: data.category,
+					mrp: data.mrp,
+				});
+
+				error = result.error;
+			}
 			if (error) {
-				console.error("Failed to add product:", error);
+				console.error("Failed to save product:", error);
 				setErrorMessage("Unable to save the item. Please try again.");
 				return;
 			}
@@ -189,7 +227,7 @@ export default function ProductForm({ onSuccess }: ProductFormProps) {
 					size='large'
 					disabled={loading}
 				>
-					{loading ? "Saving..." : "Save Item"}
+					{loading ? "Saving..." : product ? "Update Item" : "Save Item"}
 				</Button>
 			</Stack>
 		</Box>
