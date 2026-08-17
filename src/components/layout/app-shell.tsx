@@ -1,7 +1,7 @@
-import { Box } from "@mui/material";
-import Sidebar from "./sidebar";
 import Header from "./header";
+import Sidebar from "./sidebar";
 import { ReactNode } from "react";
+import { Box } from "@mui/material";
 
 interface AppShellProps {
 	children: ReactNode;

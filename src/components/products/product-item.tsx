@@ -7,9 +7,9 @@ import {
 	Stack,
 	Typography,
 } from "@mui/material";
-import { MoreVertOutlined } from "@mui/icons-material";
 import { useState } from "react";
 import type { Product } from "@/types/product";
+import { MoreVertOutlined } from "@mui/icons-material";
 
 interface ProductItemProps {
 	product: Product;

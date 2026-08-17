@@ -26,10 +26,10 @@ import {
 import { useEffect, useState } from "react";
 import type { Product } from "@/types/product";
 import AppShell from "@/components/layout/app-shell";
+import { createClient } from "@/lib/supabase/client";
 import { getProducts } from "@/lib/products/product-service";
 import ProductForm from "@/components/products/product-form";
 import ProductItem from "@/components/products/product-item";
-import { createClient } from "@/lib/supabase/client";
 
 export default function ProductsPage() {
 	const [loading, setLoading] = useState(true);

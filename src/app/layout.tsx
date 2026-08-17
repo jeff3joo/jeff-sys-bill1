@@ -1,23 +1,23 @@
-import type { Metadata } from "next";
 import "./globals.css";
+import type { Metadata } from "next";
 
 import AppThemeProvider from "@/components/providers/theme-provider";
 
 export const metadata: Metadata = {
-  title: "Jeff Systems",
-  description: "Jeff Systems Billing Management",
+	title: "Jeff Systems",
+	description: "Jeff Systems Billing Management",
 };
 
 export default function RootLayout({
-  children,
+	children,
 }: Readonly<{
-  children: React.ReactNode;
+	children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en">
-      <body>
-        <AppThemeProvider>{children}</AppThemeProvider>
-      </body>
-    </html>
-  );
+	return (
+		<html lang='en'>
+			<body>
+				<AppThemeProvider>{children}</AppThemeProvider>
+			</body>
+		</html>
+	);
 }

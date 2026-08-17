@@ -1,8 +1,8 @@
 "use client";
 
-import { Avatar, Box, IconButton, Typography } from "@mui/material";
-import { NotificationsOutlined } from "@mui/icons-material";
 import MobileMenu from "./mobile-menu";
+import { NotificationsOutlined } from "@mui/icons-material";
+import { Avatar, Box, IconButton, Typography } from "@mui/material";
 
 export default function Header() {
 	return (

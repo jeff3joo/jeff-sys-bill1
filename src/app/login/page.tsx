@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
 	Alert,
 	Box,
@@ -12,6 +10,8 @@ import {
 	TextField,
 	Typography,
 } from "@mui/material";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
 

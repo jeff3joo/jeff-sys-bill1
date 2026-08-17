@@ -1,8 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	Box,
 	Button,
@@ -14,9 +11,12 @@ import {
 	Alert,
 } from "@mui/material";
 import { z } from "zod";
-import { PRODUCT_CATEGORIES } from "@/lib/products/categories";
-import { createClient } from "@/lib/supabase/client";
 import { Product } from "@/types/product";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { PRODUCT_CATEGORIES } from "@/lib/products/categories";
 
 const productSchema = z.object({
 	name: z.string().trim().min(1, "Name is required"),

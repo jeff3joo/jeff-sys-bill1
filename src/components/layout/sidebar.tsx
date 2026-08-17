@@ -1,14 +1,7 @@
 "use client";
 
 import {
-	DashboardOutlined,
-	Inventory2Outlined,
-	ReceiptLongOutlined,
-	SettingsOutlined,
-	LogoutOutlined,
-} from "@mui/icons-material";
-import {
-	Box,
+  Box,
 	Divider,
 	List,
 	ListItemButton,
@@ -16,6 +9,14 @@ import {
 	ListItemText,
 	Typography,
 } from "@mui/material";
+
+import {
+  DashboardOutlined,
+  Inventory2Outlined,
+  ReceiptLongOutlined,
+  LogoutOutlined,
+} from "@mui/icons-material";
+
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
