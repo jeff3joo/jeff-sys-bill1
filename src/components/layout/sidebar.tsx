@@ -35,17 +35,17 @@ const navigationItems = [
 		href: "/billing",
 		icon: <ReceiptLongOutlined />,
 	},
-	{
-		label: "Settings",
-		href: "/settings",
-		icon: <SettingsOutlined />,
-	},
+	// {
+	// 	label: "Settings",
+	// 	href: "/settings",
+	// 	icon: <SettingsOutlined />,
+	// },
 ];
 
 export default function Sidebar() {
 	const router = useRouter();
 
-  const supabase = createClient();
+	const supabase = createClient();
 
 	const handleLogout = async () => {
 		await supabase.auth.signOut();
@@ -57,7 +57,11 @@ export default function Sidebar() {
 		<Box
 			sx={{
 				width: 240,
-				height: "100%",
+				height: "100vh",
+				flexShrink: 0,
+				position: "fixed",
+				top: 0,
+				left: 0,
 				borderRight: "1px solid",
 				borderColor: "divider",
 				display: "flex",
@@ -74,9 +78,7 @@ export default function Sidebar() {
 					Billing Management
 				</Typography>
 			</Box>
-
 			<Divider />
-
 			<List sx={{ px: 1.5, py: 2 }}>
 				{navigationItems.map((item) => (
 					<ListItemButton
@@ -94,10 +96,9 @@ export default function Sidebar() {
 					</ListItemButton>
 				))}
 			</List>
-
 			<Box sx={{ mt: "auto", p: 1.5 }}>
 				<ListItemButton
-          onClick={handleLogout}
+					onClick={handleLogout}
 					sx={{
 						borderRadius: 2,
 					}}
