@@ -7,24 +7,26 @@ import {
 	CardContent,
 	Container,
 	Divider,
+	IconButton,
 	Stack,
 	TextField,
 	Typography,
 } from "@mui/material";
+import {
+	getSubtotal,
+	getLineTotal,
+	getGrandTotal,
+	getTotalDiscount,
+	getDiscountAmount,
+	getDiscountPercentage,
+	hasMrp,
+} from "@/lib/calculations/billing";
 import { Product } from "@/types/product";
 import { useEffect, useState } from "react";
+import type { BillItem } from "@/types/billing";
+import { DeleteOutlined } from "@mui/icons-material";
 import AppShell from "@/components/layout/app-shell";
 import { getProducts } from "@/lib/products/product-service";
-
-type BillItem = {
-	productId: string;
-	name: string;
-	type: "product" | "service";
-	category: string;
-	mrp: number;
-	quantity: number;
-	sellingPrice: number;
-};
 
 export default function BillingPage() {
 	const [customerName, setCustomerName] = useState("");
@@ -37,6 +39,10 @@ export default function BillingPage() {
 	const [products, setProducts] = useState<Product[]>([]);
 	const [billItems, setBillItems] = useState<BillItem[]>([]);
 	const [productsLoading, setProductsLoading] = useState(false);
+
+	const subtotal = getSubtotal(billItems);
+	const grandTotal = getGrandTotal(billItems);
+	const totalDiscount = getTotalDiscount(billItems);
 
 	useEffect(() => {
 		const loadProducts = async () => {
@@ -105,12 +111,48 @@ export default function BillingPage() {
 					category: product.category,
 					mrp: product.mrp,
 					quantity: 1,
-					sellingPrice: product.mrp,
+					sellingPrice: String(product.mrp),
 				},
 			];
 		});
 
 		setSearchQuery("");
+	};
+
+	const updateItemQuantity = (productId: string, quantity: number) => {
+		if (quantity < 1) {
+			return;
+		}
+
+		setBillItems((currentItems) =>
+			currentItems.map((item) =>
+				item.productId === productId
+					? {
+							...item,
+							quantity,
+						}
+					: item,
+			),
+		);
+	};
+
+	const updateItemSellingPrice = (productId: string, sellingPrice: string) => {
+		setBillItems((currentItems) =>
+			currentItems.map((item) =>
+				item.productId === productId
+					? {
+							...item,
+							sellingPrice,
+						}
+					: item,
+			),
+		);
+	};
+
+	const removeItemFromBill = (productId: string) => {
+		setBillItems((currentItems) =>
+			currentItems.filter((item) => item.productId !== productId),
+		);
 	};
 
 	return (
@@ -208,7 +250,7 @@ export default function BillingPage() {
 										value={customerAddress}
 										placeholder='Customer address'
 										onChange={(event) => setCustomerAddress(event.target.value)}
-									/>{" "}
+									/>
 								</Stack>
 							</Stack>
 						</CardContent>
@@ -376,34 +418,226 @@ export default function BillingPage() {
 													borderRadius: 2,
 												}}
 											>
-												<Stack
-													direction='row'
-													sx={{
-														justifyContent: "space-between",
-														alignItems: "center",
-														gap: 2,
-													}}
-												>
-													<Box sx={{ minWidth: 0 }}>
-														<Typography sx={{ fontWeight: 600 }}>
-															{item.name}
-														</Typography>
-
-														<Typography variant='body2' color='text.secondary'>
-															MRP ₹{item.mrp.toLocaleString("en-IN")}
-															{" · "}
-															Qty {item.quantity}
-														</Typography>
-													</Box>
-
-													<Typography
+												<Stack spacing={2}>
+													{/* Item Header */}
+													<Stack
+														direction='row'
 														sx={{
-															fontWeight: 600,
-															whiteSpace: "nowrap",
+															justifyContent: "space-between",
+															alignItems: "flex-start",
+															gap: 2,
 														}}
 													>
-														₹{item.sellingPrice.toLocaleString("en-IN")}
-													</Typography>
+														<Box sx={{ minWidth: 0 }}>
+															<Typography
+																sx={{
+																	fontWeight: 600,
+																}}
+															>
+																{item.name}
+															</Typography>
+
+															<Typography
+																variant='body2'
+																color='text.secondary'
+															>
+																{item.type} · {item.category}
+															</Typography>
+														</Box>
+
+														<IconButton
+															aria-label={`Remove ${item.name}`}
+															onClick={() => removeItemFromBill(item.productId)}
+															size='small'
+														>
+															<DeleteOutlined fontSize='small' />
+														</IconButton>
+													</Stack>
+
+													{/* Item Controls */}
+													<Stack
+														direction={{
+															xs: "column",
+															sm: "row",
+														}}
+														spacing={2}
+														sx={{
+															alignItems: {
+																xs: "stretch",
+																sm: "center",
+															},
+														}}
+													>
+														{/* MRP */}
+														<Box
+															sx={{
+																minWidth: {
+																	sm: 110,
+																},
+															}}
+														>
+															<Typography
+																variant='caption'
+																color='text.secondary'
+															>
+																MRP / Unit
+															</Typography>
+
+															<Typography
+																sx={{
+																	fontWeight: 600,
+																}}
+															>
+																{item.mrp > 0
+																	? `₹${item.mrp.toLocaleString("en-IN")}`
+																	: "N/A"}{" "}
+															</Typography>
+														</Box>
+
+														{/* Quantity */}
+														<Box>
+															<Typography
+																variant='caption'
+																color='text.secondary'
+															>
+																Quantity
+															</Typography>
+
+															<Stack
+																direction='row'
+																spacing={1}
+																sx={{
+																	alignItems: "center",
+																}}
+															>
+																<Button
+																	variant='outlined'
+																	size='small'
+																	onClick={() =>
+																		updateItemQuantity(
+																			item.productId,
+																			item.quantity - 1,
+																		)
+																	}
+																	disabled={item.quantity <= 1}
+																	sx={{
+																		minWidth: 36,
+																		width: 36,
+																		height: 36,
+																		p: 0,
+																	}}
+																>
+																	−
+																</Button>
+
+																<Typography
+																	sx={{
+																		minWidth: 28,
+																		textAlign: "center",
+																		fontWeight: 600,
+																	}}
+																>
+																	{item.quantity}
+																</Typography>
+
+																<Button
+																	variant='outlined'
+																	size='small'
+																	onClick={() =>
+																		updateItemQuantity(
+																			item.productId,
+																			item.quantity + 1,
+																		)
+																	}
+																	sx={{
+																		minWidth: 36,
+																		width: 36,
+																		height: 36,
+																		p: 0,
+																	}}
+																>
+																	+
+																</Button>
+															</Stack>
+														</Box>
+
+														{/* Selling Price */}
+														<TextField
+															label='Selling Price / Unit'
+															value={item.sellingPrice}
+															onChange={(event) => {
+																const value = event.target.value;
+
+																if (value === "" || /^\d*\.?\d*$/.test(value)) {
+																	if (
+																		value === "" ||
+																		item.mrp <= 0 ||
+																		Number(value) <= item.mrp
+																	) {
+																		updateItemSellingPrice(
+																			item.productId,
+																			value,
+																		);
+																	}
+																}
+															}}
+															type='text'
+															inputMode='decimal'
+															size='small'
+															sx={{
+																width: {
+																	xs: "100%",
+																	sm: 220,
+																},
+															}}
+														/>
+													</Stack>
+
+													{/* Item Summary */}
+													<Stack
+														direction={{
+															xs: "column",
+															sm: "row",
+														}}
+														sx={{
+															justifyContent: "space-between",
+															alignItems: {
+																xs: "flex-start",
+																sm: "center",
+															},
+															gap: 1,
+														}}
+													>
+														{hasMrp(item) ? (
+															<Typography
+																variant='body2'
+																color='text.secondary'
+															>
+																Discount:{" "}
+																{getDiscountPercentage(item).toFixed(2)}%{" · "}
+																₹
+																{getDiscountAmount(item).toLocaleString(
+																	"en-IN",
+																)}
+															</Typography>
+														) : (
+															<Typography
+																variant='body2'
+																color='text.secondary'
+															>
+																Discount: N/A
+															</Typography>
+														)}
+
+														<Typography
+															sx={{
+																fontWeight: 700,
+															}}
+														>
+															Line Total: ₹
+															{getLineTotal(item).toLocaleString("en-IN")}
+														</Typography>
+													</Stack>
 												</Stack>
 											</Box>
 										))}
@@ -429,7 +663,13 @@ export default function BillingPage() {
 								>
 									<Typography color='text.secondary'>Subtotal</Typography>
 
-									<Typography>₹0.00</Typography>
+									<Typography>
+										₹
+										{subtotal.toLocaleString("en-IN", {
+											minimumFractionDigits: 2,
+											maximumFractionDigits: 2,
+										})}
+									</Typography>
 								</Stack>
 
 								<Stack
@@ -440,7 +680,13 @@ export default function BillingPage() {
 								>
 									<Typography color='text.secondary'>Discount</Typography>
 
-									<Typography>₹0.00</Typography>
+									<Typography>
+										₹
+										{totalDiscount.toLocaleString("en-IN", {
+											minimumFractionDigits: 2,
+											maximumFractionDigits: 2,
+										})}
+									</Typography>
 								</Stack>
 
 								<Divider />
@@ -456,7 +702,11 @@ export default function BillingPage() {
 									</Typography>
 
 									<Typography variant='h6' sx={{ fontWeight: 700 }}>
-										₹0.00
+										₹
+										{grandTotal.toLocaleString("en-IN", {
+											minimumFractionDigits: 2,
+											maximumFractionDigits: 2,
+										})}
 									</Typography>
 								</Stack>
 
