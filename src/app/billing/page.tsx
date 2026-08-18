@@ -23,12 +23,14 @@ import {
 } from "@/lib/calculations/billing";
 import { Product } from "@/types/product";
 import { useEffect, useState } from "react";
-import type { BillItem } from "@/types/billing";
+import { createInvoiceWithItems } from "./actions";
 import { DeleteOutlined } from "@mui/icons-material";
 import AppShell from "@/components/layout/app-shell";
 import { getProducts } from "@/lib/products/product-service";
+import type { BillItem, InvoicePayload } from "@/types/billing";
 
 export default function BillingPage() {
+	const [loading, setLoading] = useState(false);
 	const [customerName, setCustomerName] = useState("");
 	const [customerPhone, setCustomerPhone] = useState("");
 	const [customerEmail, setCustomerEmail] = useState("");
@@ -40,9 +42,21 @@ export default function BillingPage() {
 	const [billItems, setBillItems] = useState<BillItem[]>([]);
 	const [productsLoading, setProductsLoading] = useState(false);
 
+	const taxTotal = 0;
 	const subtotal = getSubtotal(billItems);
 	const grandTotal = getGrandTotal(billItems);
 	const totalDiscount = getTotalDiscount(billItems);
+
+	const invoicePayload: InvoicePayload = {
+		customerName: customerName.trim(),
+		customerPhone: customerPhone.trim(),
+		customerEmail: customerEmail.trim(),
+		customerAddress: customerAddress.trim(),
+		subtotal,
+		discount: totalDiscount,
+		total: grandTotal,
+		items: billItems,
+	};
 
 	useEffect(() => {
 		const loadProducts = async () => {
@@ -153,6 +167,49 @@ export default function BillingPage() {
 		setBillItems((currentItems) =>
 			currentItems.filter((item) => item.productId !== productId),
 		);
+	};
+
+	const handleGenerateBill = async () => {
+		if (!validateCustomerDetails() || billItems.length === 0) {
+			return;
+		}
+
+		try {
+			setLoading(true);
+
+			const invoiceItems = billItems.map((item) => ({
+				productId: item.productId,
+				name: item.name,
+				type: item.type,
+				category: item.category,
+				mrp: item.mrp,
+				sellingPrice: Number(item.sellingPrice || 0),
+				quantity: item.quantity,
+				discount: getDiscountAmount(item),
+				discountPercentage: getDiscountPercentage(item),
+				lineTotal: getLineTotal(item),
+			}));
+
+			const invoice = await createInvoiceWithItems(
+				{
+					customerName: customerName.trim(),
+					customerPhone: customerPhone.trim(),
+					customerEmail: customerEmail.trim(),
+					customerAddress: customerAddress.trim(),
+					subtotal,
+					discountTotal: totalDiscount,
+					taxTotal: 0,
+					grandTotal,
+				},
+				invoiceItems,
+			);
+
+			console.log(invoice)
+		} catch (error) {
+			console.error("Failed to create invoice:", error);
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	return (
@@ -709,25 +766,14 @@ export default function BillingPage() {
 										})}
 									</Typography>
 								</Stack>
-
 								<Button
 									variant='contained'
 									size='large'
 									fullWidth
-									onClick={() => {
-										if (!validateCustomerDetails()) {
-											return;
-										}
-
-										console.log({
-											customerName,
-											customerPhone,
-											customerEmail,
-											customerAddress,
-										});
-									}}
+									onClick={handleGenerateBill}
+									disabled={loading}
 								>
-									Generate Bill
+									{loading ? "Creating Bill..." : "Generate Bill"}
 								</Button>
 							</Stack>
 						</CardContent>

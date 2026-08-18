@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
+
 	let supabaseResponse = NextResponse.next({
 		request,
 	});
@@ -32,9 +33,7 @@ export async function updateSession(request: NextRequest) {
 		},
 	);
 
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
+	const { data: claimsData } = await supabase.auth.getClaims();
 
 	const pathname = request.nextUrl.pathname;
 
@@ -44,19 +43,21 @@ export async function updateSession(request: NextRequest) {
 		(route) => pathname === route || pathname.startsWith(`${route}/`),
 	);
 
-	if (isProtectedRoute && !user) {
+	const isAuthenticated = !!claimsData?.claims;
+
+	if (isProtectedRoute && !isAuthenticated) {
 		return NextResponse.redirect(new URL("/login", request.url));
 	}
 
-	if (pathname === "/login" && user) {
+	if (pathname === "/login" && isAuthenticated) {
 		return NextResponse.redirect(new URL("/dashboard", request.url));
 	}
 
-	if (pathname === "/" && user) {
+	if (pathname === "/" && isAuthenticated) {
 		return NextResponse.redirect(new URL("/dashboard", request.url));
 	}
 
-	if (pathname === "/" && !user) {
+	if (pathname === "/" && !isAuthenticated) {
 		return NextResponse.redirect(new URL("/login", request.url));
 	}
 

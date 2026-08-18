@@ -1,0 +1,43 @@
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+import type { CreateInvoiceInput } from "@/types/billing";
+
+export async function createInvoiceWithItems(
+	input: CreateInvoiceInput,
+	items: {
+		invoiceId?: string;
+		productId: string;
+		name: string;
+		type: "product" | "service";
+		category: string;
+		mrp: number;
+		sellingPrice: number;
+		quantity: number;
+		discount: number;
+		discountPercentage: number;
+		lineTotal: number;
+	}[],
+) {
+	const supabase = await createClient();
+
+	const rpcStart = Date.now();
+
+	const { data, error } = await supabase.rpc("create_invoice_with_items", {
+		p_customer_name: input.customerName,
+		p_customer_phone: input.customerPhone,
+		p_customer_email: input.customerEmail,
+		p_customer_address: input.customerAddress,
+		p_subtotal: input.subtotal,
+		p_discount_total: input.discountTotal,
+		p_tax_total: input.taxTotal,
+		p_grand_total: input.grandTotal,
+		p_items: items,
+	});
+
+	if (error) {
+		throw new Error(error.message);
+	}
+
+	return data[0];
+}
