@@ -28,6 +28,7 @@ export type CreateInvoiceInput = {
 	discountTotal: number;
 	taxTotal: number;
 	grandTotal: number;
+	invoiceId?: string | null;
 };
 
 export type InvoiceItemPayload = {
@@ -42,4 +43,32 @@ export type InvoiceItemPayload = {
 	discount: number;
 	discountPercentage: number;
 	lineTotal: number;
+};
+
+export type InvoicePreviewData = {
+	invoiceNumber: string;
+	createdAt: string;
+
+	customerName: string;
+	customerPhone: string;
+	customerEmail: string;
+	customerAddress: string;
+
+	subtotal: number;
+	discountTotal: number;
+	taxTotal: number;
+	grandTotal: number;
+
+	items: {
+		productId: string;
+		name: string;
+		type: "product" | "service";
+		category: string;
+		mrp: number;
+		sellingPrice: number;
+		quantity: number;
+		discount: number;
+		discountPercentage: number;
+		lineTotal: number;
+	}[];
 };

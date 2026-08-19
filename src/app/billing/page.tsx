@@ -22,12 +22,16 @@ import {
 	hasMrp,
 } from "@/lib/calculations/billing";
 import { Product } from "@/types/product";
-import { useEffect, useState } from "react";
 import { createInvoiceWithItems } from "./actions";
+import { useEffect, useRef, useState } from "react";
 import { DeleteOutlined } from "@mui/icons-material";
 import AppShell from "@/components/layout/app-shell";
 import { getProducts } from "@/lib/products/product-service";
-import type { BillItem, InvoicePayload } from "@/types/billing";
+import type {
+	BillItem,
+	InvoicePayload,
+	InvoicePreviewData,
+} from "@/types/billing";
 
 export default function BillingPage() {
 	const [loading, setLoading] = useState(false);
@@ -37,10 +41,16 @@ export default function BillingPage() {
 	const [customerAddress, setCustomerAddress] = useState("");
 	const [customerNameError, setCustomerNameError] = useState("");
 
+	const [isPreviewMode, setIsPreviewMode] = useState(false);
+	const [invoicePreview, setInvoicePreview] =
+		useState<InvoicePreviewData | null>(null);
+
 	const [searchQuery, setSearchQuery] = useState("");
 	const [products, setProducts] = useState<Product[]>([]);
 	const [billItems, setBillItems] = useState<BillItem[]>([]);
+	const invoicePreviewRef = useRef<HTMLDivElement | null>(null);
 	const [productsLoading, setProductsLoading] = useState(false);
+	const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
 
 	const taxTotal = 0;
 	const subtotal = getSubtotal(billItems);
@@ -192,6 +202,7 @@ export default function BillingPage() {
 
 			const invoice = await createInvoiceWithItems(
 				{
+					invoiceId: editingInvoiceId,
 					customerName: customerName.trim(),
 					customerPhone: customerPhone.trim(),
 					customerEmail: customerEmail.trim(),
@@ -203,13 +214,63 @@ export default function BillingPage() {
 				},
 				invoiceItems,
 			);
+			setEditingInvoiceId(invoice.id);
 
-			console.log(invoice)
+			const previewData: InvoicePreviewData = {
+				invoiceNumber: invoice.invoice_number,
+				createdAt: invoice.created_at,
+
+				customerName: customerName.trim(),
+				customerPhone: customerPhone.trim(),
+				customerEmail: customerEmail.trim(),
+				customerAddress: customerAddress.trim(),
+
+				subtotal,
+				discountTotal: totalDiscount,
+				taxTotal: 0,
+				grandTotal,
+
+				items: invoiceItems,
+			};
+
+			setInvoicePreview(previewData);
+			setTimeout(() => {
+				invoicePreviewRef.current?.scrollIntoView({
+					behavior: "smooth",
+					block: "start",
+				});
+			}, 100);
 		} catch (error) {
 			console.error("Failed to create invoice:", error);
 		} finally {
 			setLoading(false);
 		}
+	};
+
+	const handleNewBill = () => {
+		setInvoicePreview(null);
+		setEditingInvoiceId(null);
+
+		setCustomerName("");
+		setCustomerPhone("");
+		setCustomerEmail("");
+		setCustomerAddress("");
+
+		setBillItems([]);
+
+		window.scrollTo({
+			top: 0,
+			behavior: "smooth",
+		});
+	};
+
+	const handleEditBill = () => {
+		setInvoicePreview(null);
+
+		window.scrollTo({
+			top: 0,
+			behavior: "smooth",
+		});
 	};
 
 	return (
@@ -223,6 +284,7 @@ export default function BillingPage() {
 					},
 				}}
 			>
+				{!invoicePreview && (
 				<Stack spacing={4}>
 					{/* Header */}
 					<Box>
@@ -306,7 +368,9 @@ export default function BillingPage() {
 										label='Address'
 										value={customerAddress}
 										placeholder='Customer address'
-										onChange={(event) => setCustomerAddress(event.target.value)}
+											onChange={(event) =>
+												setCustomerAddress(event.target.value)
+											}
 									/>
 								</Stack>
 							</Stack>
@@ -504,7 +568,9 @@ export default function BillingPage() {
 
 														<IconButton
 															aria-label={`Remove ${item.name}`}
-															onClick={() => removeItemFromBill(item.productId)}
+																onClick={() =>
+																	removeItemFromBill(item.productId)
+																}
 															size='small'
 														>
 															<DeleteOutlined fontSize='small' />
@@ -625,7 +691,10 @@ export default function BillingPage() {
 															onChange={(event) => {
 																const value = event.target.value;
 
-																if (value === "" || /^\d*\.?\d*$/.test(value)) {
+																	if (
+																		value === "" ||
+																		/^\d*\.?\d*$/.test(value)
+																	) {
 																	if (
 																		value === "" ||
 																		item.mrp <= 0 ||
@@ -671,8 +740,8 @@ export default function BillingPage() {
 																color='text.secondary'
 															>
 																Discount:{" "}
-																{getDiscountPercentage(item).toFixed(2)}%{" · "}
-																₹
+																	{getDiscountPercentage(item).toFixed(2)}%
+																	{" · "}₹
 																{getDiscountAmount(item).toLocaleString(
 																	"en-IN",
 																)}
@@ -779,6 +848,419 @@ export default function BillingPage() {
 						</CardContent>
 					</Card>
 				</Stack>
+				)}
+
+				{invoicePreview && (
+					<Box ref={invoicePreviewRef} sx={{ mt: 4 }}>
+						<Card
+							sx={{
+								mt: 4,
+								borderRadius: 3,
+								boxShadow: "none",
+								border: "1px solid",
+								borderColor: "divider",
+							}}
+						>
+							<CardContent sx={{ p: { xs: 2, sm: 4 } }}>
+								<Stack
+									direction={{ xs: "column", sm: "row" }}
+									sx={{
+										justifyContent: "space-between",
+										alignItems: {
+											xs: "flex-start",
+											sm: "flex-start",
+										},
+										gap: 3,
+									}}
+								>
+									<Box>
+										<Typography
+											variant='h5'
+											sx={{
+												fontWeight: 800,
+												letterSpacing: "-0.02em",
+											}}
+										>
+											JEFF SYSTEMS
+										</Typography>
+
+										<Typography
+											variant='body2'
+											color='text.secondary'
+											sx={{ mt: 0.5 }}
+										>
+											Billing Management
+										</Typography>
+									</Box>
+
+									<Box
+										sx={{
+											textAlign: {
+												xs: "left",
+												sm: "right",
+											},
+										}}
+									>
+										<Typography
+											variant='overline'
+											color='text.secondary'
+											sx={{
+												fontWeight: 700,
+												letterSpacing: "0.08em",
+											}}
+										>
+											INVOICE
+										</Typography>
+
+										<Typography
+											variant='h6'
+											sx={{
+												fontWeight: 700,
+												lineHeight: 1.2,
+											}}
+										>
+											{invoicePreview.invoiceNumber}
+										</Typography>
+
+										<Typography
+											variant='body2'
+											color='text.secondary'
+											sx={{ mt: 0.5 }}
+										>
+											{new Date(invoicePreview.createdAt).toLocaleDateString(
+												"en-IN",
+												{
+													day: "2-digit",
+													month: "short",
+													year: "numeric",
+												},
+											)}
+										</Typography>
+									</Box>
+								</Stack>
+								<Divider />
+								<Box
+									sx={{
+										my: 1,
+									}}
+								>
+									<Typography
+										variant='caption'
+										color='text.secondary'
+										sx={{
+											fontWeight: 700,
+											letterSpacing: "0.06em",
+										}}
+									>
+										BILL TO
+									</Typography>
+
+									<Stack spacing={0.5} sx={{ mt: 1 }}>
+										<Typography sx={{ fontWeight: 600 }}>
+											{invoicePreview.customerName}
+										</Typography>
+
+										{invoicePreview.customerPhone && (
+											<Typography variant='body2' color='text.secondary'>
+												{invoicePreview.customerPhone}
+											</Typography>
+										)}
+
+										{invoicePreview.customerEmail && (
+											<Typography variant='body2' color='text.secondary'>
+												{invoicePreview.customerEmail}
+											</Typography>
+										)}
+
+										{invoicePreview.customerAddress && (
+											<Typography variant='body2' color='text.secondary'>
+												{invoicePreview.customerAddress}
+											</Typography>
+										)}
+									</Stack>
+								</Box>
+
+								{/* Invoice Items */}
+								<Box>
+									<Typography
+										variant='h6'
+										sx={{
+											fontWeight: 700,
+											mb: 2,
+										}}
+									>
+										Items
+									</Typography>
+
+									<Stack spacing={1.5}>
+										<Box
+											sx={{
+												width: "100%",
+												overflowX: "auto",
+											}}
+										>
+											<Box
+												component='table'
+												sx={{
+													width: "100%",
+													borderCollapse: "collapse",
+													minWidth: 700,
+												}}
+											>
+												<Box component='thead'>
+													<Box component='tr'>
+														{[
+															"Item",
+															"MRP / Unit",
+															"Price / Unit",
+															"Qty",
+															"Discount",
+															"Total",
+														].map((heading) => (
+															<Box
+																key={heading}
+																component='th'
+																sx={{
+																	px: 1.5,
+																	py: 1.5,
+																	textAlign:
+																		heading === "Item" ? "left" : "right",
+																	fontSize: "0.8rem",
+																	fontWeight: 600,
+																	color: "text.secondary",
+																	bgcolor: "action.hover",
+																	borderBottom: "1px solid",
+																	borderColor: "divider",
+																	whiteSpace: "nowrap",
+																}}
+															>
+																{heading}
+															</Box>
+														))}
+													</Box>
+												</Box>
+
+												<Box component='tbody'>
+													{invoicePreview.items.map((item) => (
+														<Box component='tr' key={item.productId}>
+															<Box
+																component='td'
+																sx={{
+																	px: 1.5,
+																	py: 2,
+																	borderBottom: "1px solid",
+																	borderColor: "divider",
+																	width: "40%",
+																	maxWidth: 320,
+																	verticalAlign: "top",
+																}}
+															>
+																<Typography
+																	sx={{
+																		fontWeight: 600,
+																		overflowWrap: "anywhere",
+																		wordBreak: "break-word",
+																	}}
+																>
+																	{item.name}
+																</Typography>
+
+																<Typography
+																	variant='caption'
+																	color='text.secondary'
+																>
+																	{item.type} · {item.category}
+																</Typography>
+															</Box>
+
+															<Box
+																component='td'
+																sx={{
+																	px: 1.5,
+																	py: 2,
+																	textAlign: "right",
+																	borderBottom: "1px solid",
+																	borderColor: "divider",
+																	whiteSpace: "nowrap",
+																}}
+															>
+																{item.mrp > 0
+																	? `₹${item.mrp.toLocaleString("en-IN")}`
+																	: "N/A"}
+															</Box>
+
+															<Box
+																component='td'
+																sx={{
+																	px: 1.5,
+																	py: 2,
+																	textAlign: "right",
+																	borderBottom: "1px solid",
+																	borderColor: "divider",
+																	whiteSpace: "nowrap",
+																}}
+															>
+																₹{item.sellingPrice.toLocaleString("en-IN")}
+															</Box>
+
+															<Box
+																component='td'
+																sx={{
+																	px: 1.5,
+																	py: 2,
+																	textAlign: "right",
+																	borderBottom: "1px solid",
+																	borderColor: "divider",
+																}}
+															>
+																{item.quantity}
+															</Box>
+
+															<Box
+																component='td'
+																sx={{
+																	px: 1.5,
+																	py: 2,
+																	textAlign: "right",
+																	borderBottom: "1px solid",
+																	borderColor: "divider",
+																	whiteSpace: "nowrap",
+																}}
+															>
+																{item.discount > 0
+																	? `₹${item.discount.toLocaleString("en-IN")}`
+																	: "—"}
+															</Box>
+
+															<Box
+																component='td'
+																sx={{
+																	px: 1.5,
+																	py: 2,
+																	textAlign: "right",
+																	fontWeight: 700,
+																	borderBottom: "1px solid",
+																	borderColor: "divider",
+																	whiteSpace: "nowrap",
+																}}
+															>
+																₹{item.lineTotal.toLocaleString("en-IN")}
+															</Box>
+														</Box>
+													))}
+												</Box>
+											</Box>
+										</Box>
+									</Stack>
+								</Box>
+								<Divider />
+
+								{/* Invoice Totals */}
+								<Stack
+									spacing={1}
+									sx={{
+										width: "100%",
+										maxWidth: 360,
+										ml: "auto",
+									}}
+								>
+									<Stack
+										direction='row'
+										sx={{
+											justifyContent: "space-between",
+											gap: 2,
+										}}
+									>
+										<Typography color='text.secondary'>Subtotal</Typography>
+
+										<Typography>
+											₹{invoicePreview.subtotal.toLocaleString("en-IN")}
+										</Typography>
+									</Stack>
+
+									{invoicePreview.discountTotal > 0 && (
+										<Stack
+											direction='row'
+											sx={{
+												justifyContent: "space-between",
+												gap: 2,
+											}}
+										>
+											<Typography color='text.secondary'>Discount</Typography>
+
+											<Typography color='success.main'>
+												- ₹
+												{invoicePreview.discountTotal.toLocaleString("en-IN")}
+											</Typography>
+										</Stack>
+									)}
+
+									{invoicePreview.taxTotal > 0 && (
+										<Stack
+											direction='row'
+											sx={{
+												justifyContent: "space-between",
+												gap: 2,
+											}}
+										>
+											<Typography color='text.secondary'>Tax</Typography>
+
+											<Typography>
+												₹{invoicePreview.taxTotal.toLocaleString("en-IN")}
+											</Typography>
+										</Stack>
+									)}
+
+									<Divider />
+
+									<Stack
+										direction='row'
+										sx={{
+											justifyContent: "space-between",
+											alignItems: "center",
+											gap: 2,
+											pt: 1,
+										}}
+									>
+										<Typography variant='h6' sx={{ fontWeight: 700 }}>
+											Grand Total
+										</Typography>
+
+										<Typography
+											variant='h5'
+											sx={{
+												fontWeight: 800,
+												whiteSpace: "nowrap",
+											}}
+										>
+											₹{invoicePreview.grandTotal.toLocaleString("en-IN")}
+										</Typography>
+									</Stack>
+								</Stack>
+							</CardContent>
+						</Card>
+						<Stack
+							direction={{ xs: "column", sm: "row" }}
+							spacing={1.5}
+							sx={{
+								mt: 2,
+								justifyContent: "flex-end",
+							}}
+						>
+							<Button variant='outlined' onClick={handleEditBill}>
+								Edit Bill
+							</Button>
+
+							<Button variant='text' onClick={handleNewBill}>
+								New Bill
+							</Button>
+
+							<Button variant='contained'>
+								Download PDF
+							</Button>
+						</Stack>
+					</Box>
+				)}
 			</Container>
 		</AppShell>
 	);

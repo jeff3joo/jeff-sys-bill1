@@ -6,7 +6,7 @@ import type { CreateInvoiceInput } from "@/types/billing";
 export async function createInvoiceWithItems(
 	input: CreateInvoiceInput,
 	items: {
-		invoiceId?: string;
+		invoiceId?: string | null;
 		productId: string;
 		name: string;
 		type: "product" | "service";
@@ -21,8 +21,6 @@ export async function createInvoiceWithItems(
 ) {
 	const supabase = await createClient();
 
-	const rpcStart = Date.now();
-
 	const { data, error } = await supabase.rpc("create_invoice_with_items", {
 		p_customer_name: input.customerName,
 		p_customer_phone: input.customerPhone,
@@ -33,6 +31,7 @@ export async function createInvoiceWithItems(
 		p_tax_total: input.taxTotal,
 		p_grand_total: input.grandTotal,
 		p_items: items,
+		p_invoice_id: input.invoiceId ?? null,
 	});
 
 	if (error) {
