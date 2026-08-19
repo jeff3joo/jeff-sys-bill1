@@ -26,6 +26,7 @@ import { createInvoiceWithItems } from "./actions";
 import { useEffect, useRef, useState } from "react";
 import { DeleteOutlined } from "@mui/icons-material";
 import AppShell from "@/components/layout/app-shell";
+import { createInvoicePdf } from "@/lib/pdf/invoice";
 import { getProducts } from "@/lib/products/product-service";
 import type {
 	BillItem,
@@ -94,6 +95,37 @@ export default function BillingPage() {
 
 		setCustomerNameError("");
 		return true;
+	};
+
+	const handleDownloadPdf = async () => {
+		if (!invoicePreview) {
+			return;
+		}
+
+		try {
+			const pdfBytes = await createInvoicePdf(invoicePreview);
+
+			const arrayBuffer = new ArrayBuffer(pdfBytes.byteLength);
+
+			new Uint8Array(arrayBuffer).set(pdfBytes);
+
+			const blob = new Blob([arrayBuffer], {
+				type: "application/pdf",
+			});
+			const url = URL.createObjectURL(blob);
+
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = `${invoicePreview.invoiceNumber}.pdf`;
+
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+
+			URL.revokeObjectURL(url);
+		} catch (error) {
+			console.error("Failed to generate PDF:", error);
+		}
 	};
 
 	const filteredProducts = products.filter((product) => {
@@ -285,569 +317,569 @@ export default function BillingPage() {
 				}}
 			>
 				{!invoicePreview && (
-				<Stack spacing={4}>
-					{/* Header */}
-					<Box>
-						<Typography
-							variant='h4'
-							sx={{
-								fontWeight: 700,
-								mb: 1,
-							}}
-						>
-							New Bill
-						</Typography>
+					<Stack spacing={4}>
+						{/* Header */}
+						<Box>
+							<Typography
+								variant='h4'
+								sx={{
+									fontWeight: 700,
+									mb: 1,
+								}}
+							>
+								New Bill
+							</Typography>
 
-						<Typography variant='body1' color='text.secondary'>
-							Create a new invoice for your customer.
-						</Typography>
-					</Box>
+							<Typography variant='body1' color='text.secondary'>
+								Create a new invoice for your customer.
+							</Typography>
+						</Box>
 
-					{/* Customer */}
-					<Card>
-						<CardContent>
-							<Stack spacing={3}>
-								<Box>
-									<Typography variant='h6' sx={{ fontWeight: 700 }}>
-										Customer Details
-									</Typography>
+						{/* Customer */}
+						<Card>
+							<CardContent>
+								<Stack spacing={3}>
+									<Box>
+										<Typography variant='h6' sx={{ fontWeight: 700 }}>
+											Customer Details
+										</Typography>
 
-									<Typography variant='body2' color='text.secondary'>
-										Enter the customer's information.
-									</Typography>
-								</Box>
+										<Typography variant='body2' color='text.secondary'>
+											Enter the customer's information.
+										</Typography>
+									</Box>
 
-								<Stack
-									direction={{
-										xs: "column",
-										sm: "row",
-									}}
-									spacing={2}
-								>
-									<TextField
-										fullWidth
-										value={customerName}
-										label='Customer Name'
-										helperText={customerNameError}
-										placeholder='Enter customer name'
-										error={Boolean(customerNameError)}
-										onChange={(event) => {
-											setCustomerName(event.target.value);
-											setCustomerNameError("");
+									<Stack
+										direction={{
+											xs: "column",
+											sm: "row",
 										}}
-									/>
-									<TextField
-										fullWidth
-										type='tel'
-										label='Phone Number'
-										value={customerPhone}
-										placeholder='Enter phone number'
-										onChange={(event) => setCustomerPhone(event.target.value)}
-									/>
-								</Stack>
+										spacing={2}
+									>
+										<TextField
+											fullWidth
+											value={customerName}
+											label='Customer Name'
+											helperText={customerNameError}
+											placeholder='Enter customer name'
+											error={Boolean(customerNameError)}
+											onChange={(event) => {
+												setCustomerName(event.target.value);
+												setCustomerNameError("");
+											}}
+										/>
+										<TextField
+											fullWidth
+											type='tel'
+											label='Phone Number'
+											value={customerPhone}
+											placeholder='Enter phone number'
+											onChange={(event) => setCustomerPhone(event.target.value)}
+										/>
+									</Stack>
 
-								<Stack
-									direction={{
-										xs: "column",
-										sm: "row",
-									}}
-									spacing={2}
-								>
-									<TextField
-										fullWidth
-										type='email'
-										label='Email'
-										value={customerEmail}
-										placeholder='customer@example.com'
-										onChange={(event) => setCustomerEmail(event.target.value)}
-									/>
-									<TextField
-										fullWidth
-										multiline
-										minRows={2}
-										label='Address'
-										value={customerAddress}
-										placeholder='Customer address'
+									<Stack
+										direction={{
+											xs: "column",
+											sm: "row",
+										}}
+										spacing={2}
+									>
+										<TextField
+											fullWidth
+											type='email'
+											label='Email'
+											value={customerEmail}
+											placeholder='customer@example.com'
+											onChange={(event) => setCustomerEmail(event.target.value)}
+										/>
+										<TextField
+											fullWidth
+											multiline
+											minRows={2}
+											label='Address'
+											value={customerAddress}
+											placeholder='Customer address'
 											onChange={(event) =>
 												setCustomerAddress(event.target.value)
 											}
-									/>
+										/>
+									</Stack>
 								</Stack>
-							</Stack>
-						</CardContent>
-					</Card>
+							</CardContent>
+						</Card>
 
-					{/* Items */}
-					<Card
-						sx={{
-							overflow: "visible",
-						}}
-					>
-						<CardContent>
-							<Stack spacing={3}>
-								<Box>
-									<Typography variant='h6' sx={{ fontWeight: 700 }}>
-										Bill Items
-									</Typography>
+						{/* Items */}
+						<Card
+							sx={{
+								overflow: "visible",
+							}}
+						>
+							<CardContent>
+								<Stack spacing={3}>
+									<Box>
+										<Typography variant='h6' sx={{ fontWeight: 700 }}>
+											Bill Items
+										</Typography>
 
-									<Typography variant='body2' color='text.secondary'>
-										Add products or services to this bill.
-									</Typography>
-								</Box>
+										<Typography variant='body2' color='text.secondary'>
+											Add products or services to this bill.
+										</Typography>
+									</Box>
 
-								{/* Search */}
-								<Box
-									sx={{
-										position: "relative",
-									}}
-								>
-									<TextField
-										fullWidth
-										autoComplete='off'
-										value={searchQuery}
-										label='Search products or services'
-										placeholder='Search by name or category...'
-										onChange={(event) => setSearchQuery(event.target.value)}
-									/>
+									{/* Search */}
+									<Box
+										sx={{
+											position: "relative",
+										}}
+									>
+										<TextField
+											fullWidth
+											autoComplete='off'
+											value={searchQuery}
+											label='Search products or services'
+											placeholder='Search by name or category...'
+											onChange={(event) => setSearchQuery(event.target.value)}
+										/>
 
-									{/* Search Results Dropdown */}
-									{searchQuery.trim() && (
-										<Card
-											variant='outlined'
-											sx={{
-												position: "absolute",
-												top: "calc(100% + 6px)",
-												left: 0,
-												right: 0,
-												zIndex: 10,
-												maxHeight: 320,
-												overflowY: "auto",
-												boxShadow: 3,
-												overflow: "visible",
-											}}
-										>
-											{productsLoading ? (
-												<Box sx={{ p: 2.5 }}>
-													<Typography variant='body2' color='text.secondary'>
-														Loading products...
-													</Typography>
-												</Box>
-											) : filteredProducts.length === 0 ? (
-												<Box sx={{ p: 2.5 }}>
-													<Typography variant='body2' color='text.secondary'>
-														No matching products or services found.
-													</Typography>
-												</Box>
-											) : (
-												<Stack>
-													{filteredProducts.map((product) => (
-														<Box
-															key={product.id}
-															onClick={() => addItemToBill(product)}
-															sx={{
-																px: 2,
-																py: 1.5,
-																cursor: "pointer",
-																borderBottom: "1px solid",
-																borderColor: "divider",
-																transition: "background-color 0.15s ease",
-
-																"&:hover": {
-																	bgcolor: "action.hover",
-																},
-
-																"&:last-child": {
-																	borderBottom: "none",
-																},
-															}}
-														>
-															<Stack
-																direction='row'
+										{/* Search Results Dropdown */}
+										{searchQuery.trim() && (
+											<Card
+												variant='outlined'
+												sx={{
+													position: "absolute",
+													top: "calc(100% + 6px)",
+													left: 0,
+													right: 0,
+													zIndex: 10,
+													maxHeight: 320,
+													overflowY: "auto",
+													boxShadow: 3,
+													overflow: "visible",
+												}}
+											>
+												{productsLoading ? (
+													<Box sx={{ p: 2.5 }}>
+														<Typography variant='body2' color='text.secondary'>
+															Loading products...
+														</Typography>
+													</Box>
+												) : filteredProducts.length === 0 ? (
+													<Box sx={{ p: 2.5 }}>
+														<Typography variant='body2' color='text.secondary'>
+															No matching products or services found.
+														</Typography>
+													</Box>
+												) : (
+													<Stack>
+														{filteredProducts.map((product) => (
+															<Box
+																key={product.id}
+																onClick={() => addItemToBill(product)}
 																sx={{
-																	alignItems: "center",
-																	justifyContent: "space-between",
-																	gap: 2,
+																	px: 2,
+																	py: 1.5,
+																	cursor: "pointer",
+																	borderBottom: "1px solid",
+																	borderColor: "divider",
+																	transition: "background-color 0.15s ease",
+
+																	"&:hover": {
+																		bgcolor: "action.hover",
+																	},
+
+																	"&:last-child": {
+																		borderBottom: "none",
+																	},
 																}}
 															>
-																<Box sx={{ minWidth: 0 }}>
+																<Stack
+																	direction='row'
+																	sx={{
+																		alignItems: "center",
+																		justifyContent: "space-between",
+																		gap: 2,
+																	}}
+																>
+																	<Box sx={{ minWidth: 0 }}>
+																		<Typography
+																			sx={{
+																				fontWeight: 600,
+																				overflow: "hidden",
+																				textOverflow: "ellipsis",
+																				whiteSpace: "nowrap",
+																			}}
+																		>
+																			{product.name}
+																		</Typography>
+
+																		<Typography
+																			variant='body2'
+																			color='text.secondary'
+																		>
+																			{product.type} · {product.category}
+																		</Typography>
+																	</Box>
+
 																	<Typography
 																		sx={{
 																			fontWeight: 600,
-																			overflow: "hidden",
-																			textOverflow: "ellipsis",
 																			whiteSpace: "nowrap",
 																		}}
 																	>
-																		{product.name}
+																		₹{product.mrp.toLocaleString("en-IN")}
 																	</Typography>
+																</Stack>
+															</Box>
+														))}
+													</Stack>
+												)}
+											</Card>
+										)}
+									</Box>
 
-																	<Typography
-																		variant='body2'
-																		color='text.secondary'
-																	>
-																		{product.type} · {product.category}
-																	</Typography>
-																</Box>
+									{/* Bill Items */}
+									{billItems.length === 0 ? (
+										<Box
+											sx={{
+												minHeight: 180,
+												display: "flex",
+												alignItems: "center",
+												justifyContent: "center",
+												textAlign: "center",
+											}}
+										>
+											<Stack spacing={1}>
+												<Typography variant='body1' sx={{ fontWeight: 600 }}>
+													No items added
+												</Typography>
 
+												<Typography variant='body2' color='text.secondary'>
+													Search for a product or service to add it to the bill.
+												</Typography>
+											</Stack>
+										</Box>
+									) : (
+										<Stack spacing={1.5}>
+											{billItems.map((item) => (
+												<Box
+													key={item.productId}
+													sx={{
+														p: 2,
+														border: "1px solid",
+														borderColor: "divider",
+														borderRadius: 2,
+													}}
+												>
+													<Stack spacing={2}>
+														{/* Item Header */}
+														<Stack
+															direction='row'
+															sx={{
+																justifyContent: "space-between",
+																alignItems: "flex-start",
+																gap: 2,
+															}}
+														>
+															<Box sx={{ minWidth: 0 }}>
 																<Typography
 																	sx={{
 																		fontWeight: 600,
-																		whiteSpace: "nowrap",
 																	}}
 																>
-																	₹{product.mrp.toLocaleString("en-IN")}
+																	{item.name}
 																</Typography>
-															</Stack>
-														</Box>
-													))}
-												</Stack>
-											)}
-										</Card>
-									)}
-								</Box>
 
-								{/* Bill Items */}
-								{billItems.length === 0 ? (
-									<Box
-										sx={{
-											minHeight: 180,
-											display: "flex",
-											alignItems: "center",
-											justifyContent: "center",
-											textAlign: "center",
-										}}
-									>
-										<Stack spacing={1}>
-											<Typography variant='body1' sx={{ fontWeight: 600 }}>
-												No items added
-											</Typography>
+																<Typography
+																	variant='body2'
+																	color='text.secondary'
+																>
+																	{item.type} · {item.category}
+																</Typography>
+															</Box>
 
-											<Typography variant='body2' color='text.secondary'>
-												Search for a product or service to add it to the bill.
-											</Typography>
-										</Stack>
-									</Box>
-								) : (
-									<Stack spacing={1.5}>
-										{billItems.map((item) => (
-											<Box
-												key={item.productId}
-												sx={{
-													p: 2,
-													border: "1px solid",
-													borderColor: "divider",
-													borderRadius: 2,
-												}}
-											>
-												<Stack spacing={2}>
-													{/* Item Header */}
-													<Stack
-														direction='row'
-														sx={{
-															justifyContent: "space-between",
-															alignItems: "flex-start",
-															gap: 2,
-														}}
-													>
-														<Box sx={{ minWidth: 0 }}>
-															<Typography
-																sx={{
-																	fontWeight: 600,
-																}}
-															>
-																{item.name}
-															</Typography>
-
-															<Typography
-																variant='body2'
-																color='text.secondary'
-															>
-																{item.type} · {item.category}
-															</Typography>
-														</Box>
-
-														<IconButton
-															aria-label={`Remove ${item.name}`}
+															<IconButton
+																aria-label={`Remove ${item.name}`}
 																onClick={() =>
 																	removeItemFromBill(item.productId)
 																}
-															size='small'
-														>
-															<DeleteOutlined fontSize='small' />
-														</IconButton>
-													</Stack>
+																size='small'
+															>
+																<DeleteOutlined fontSize='small' />
+															</IconButton>
+														</Stack>
 
-													{/* Item Controls */}
-													<Stack
-														direction={{
-															xs: "column",
-															sm: "row",
-														}}
-														spacing={2}
-														sx={{
-															alignItems: {
-																xs: "stretch",
-																sm: "center",
-															},
-														}}
-													>
-														{/* MRP */}
-														<Box
+														{/* Item Controls */}
+														<Stack
+															direction={{
+																xs: "column",
+																sm: "row",
+															}}
+															spacing={2}
 															sx={{
-																minWidth: {
-																	sm: 110,
+																alignItems: {
+																	xs: "stretch",
+																	sm: "center",
 																},
 															}}
 														>
-															<Typography
-																variant='caption'
-																color='text.secondary'
-															>
-																MRP / Unit
-															</Typography>
-
-															<Typography
+															{/* MRP */}
+															<Box
 																sx={{
-																	fontWeight: 600,
+																	minWidth: {
+																		sm: 110,
+																	},
 																}}
 															>
-																{item.mrp > 0
-																	? `₹${item.mrp.toLocaleString("en-IN")}`
-																	: "N/A"}{" "}
-															</Typography>
-														</Box>
-
-														{/* Quantity */}
-														<Box>
-															<Typography
-																variant='caption'
-																color='text.secondary'
-															>
-																Quantity
-															</Typography>
-
-															<Stack
-																direction='row'
-																spacing={1}
-																sx={{
-																	alignItems: "center",
-																}}
-															>
-																<Button
-																	variant='outlined'
-																	size='small'
-																	onClick={() =>
-																		updateItemQuantity(
-																			item.productId,
-																			item.quantity - 1,
-																		)
-																	}
-																	disabled={item.quantity <= 1}
-																	sx={{
-																		minWidth: 36,
-																		width: 36,
-																		height: 36,
-																		p: 0,
-																	}}
+																<Typography
+																	variant='caption'
+																	color='text.secondary'
 																>
-																	−
-																</Button>
+																	MRP / Unit
+																</Typography>
 
 																<Typography
 																	sx={{
-																		minWidth: 28,
-																		textAlign: "center",
 																		fontWeight: 600,
 																	}}
 																>
-																	{item.quantity}
+																	{item.mrp > 0
+																		? `₹${item.mrp.toLocaleString("en-IN")}`
+																		: "N/A"}{" "}
+																</Typography>
+															</Box>
+
+															{/* Quantity */}
+															<Box>
+																<Typography
+																	variant='caption'
+																	color='text.secondary'
+																>
+																	Quantity
 																</Typography>
 
-																<Button
-																	variant='outlined'
-																	size='small'
-																	onClick={() =>
-																		updateItemQuantity(
-																			item.productId,
-																			item.quantity + 1,
-																		)
-																	}
+																<Stack
+																	direction='row'
+																	spacing={1}
 																	sx={{
-																		minWidth: 36,
-																		width: 36,
-																		height: 36,
-																		p: 0,
+																		alignItems: "center",
 																	}}
 																>
-																	+
-																</Button>
-															</Stack>
-														</Box>
+																	<Button
+																		variant='outlined'
+																		size='small'
+																		onClick={() =>
+																			updateItemQuantity(
+																				item.productId,
+																				item.quantity - 1,
+																			)
+																		}
+																		disabled={item.quantity <= 1}
+																		sx={{
+																			minWidth: 36,
+																			width: 36,
+																			height: 36,
+																			p: 0,
+																		}}
+																	>
+																		−
+																	</Button>
 
-														{/* Selling Price */}
-														<TextField
-															label='Selling Price / Unit'
-															value={item.sellingPrice}
-															onChange={(event) => {
-																const value = event.target.value;
+																	<Typography
+																		sx={{
+																			minWidth: 28,
+																			textAlign: "center",
+																			fontWeight: 600,
+																		}}
+																	>
+																		{item.quantity}
+																	</Typography>
+
+																	<Button
+																		variant='outlined'
+																		size='small'
+																		onClick={() =>
+																			updateItemQuantity(
+																				item.productId,
+																				item.quantity + 1,
+																			)
+																		}
+																		sx={{
+																			minWidth: 36,
+																			width: 36,
+																			height: 36,
+																			p: 0,
+																		}}
+																	>
+																		+
+																	</Button>
+																</Stack>
+															</Box>
+
+															{/* Selling Price */}
+															<TextField
+																label='Selling Price / Unit'
+																value={item.sellingPrice}
+																onChange={(event) => {
+																	const value = event.target.value;
 
 																	if (
 																		value === "" ||
 																		/^\d*\.?\d*$/.test(value)
 																	) {
-																	if (
-																		value === "" ||
-																		item.mrp <= 0 ||
-																		Number(value) <= item.mrp
-																	) {
-																		updateItemSellingPrice(
-																			item.productId,
-																			value,
-																		);
+																		if (
+																			value === "" ||
+																			item.mrp <= 0 ||
+																			Number(value) <= item.mrp
+																		) {
+																			updateItemSellingPrice(
+																				item.productId,
+																				value,
+																			);
+																		}
 																	}
-																}
+																}}
+																type='text'
+																inputMode='decimal'
+																size='small'
+																sx={{
+																	width: {
+																		xs: "100%",
+																		sm: 220,
+																	},
+																}}
+															/>
+														</Stack>
+
+														{/* Item Summary */}
+														<Stack
+															direction={{
+																xs: "column",
+																sm: "row",
 															}}
-															type='text'
-															inputMode='decimal'
-															size='small'
 															sx={{
-																width: {
-																	xs: "100%",
-																	sm: 220,
+																justifyContent: "space-between",
+																alignItems: {
+																	xs: "flex-start",
+																	sm: "center",
 																},
-															}}
-														/>
-													</Stack>
-
-													{/* Item Summary */}
-													<Stack
-														direction={{
-															xs: "column",
-															sm: "row",
-														}}
-														sx={{
-															justifyContent: "space-between",
-															alignItems: {
-																xs: "flex-start",
-																sm: "center",
-															},
-															gap: 1,
-														}}
-													>
-														{hasMrp(item) ? (
-															<Typography
-																variant='body2'
-																color='text.secondary'
-															>
-																Discount:{" "}
-																	{getDiscountPercentage(item).toFixed(2)}%
-																	{" · "}₹
-																{getDiscountAmount(item).toLocaleString(
-																	"en-IN",
-																)}
-															</Typography>
-														) : (
-															<Typography
-																variant='body2'
-																color='text.secondary'
-															>
-																Discount: N/A
-															</Typography>
-														)}
-
-														<Typography
-															sx={{
-																fontWeight: 700,
+																gap: 1,
 															}}
 														>
-															Line Total: ₹
-															{getLineTotal(item).toLocaleString("en-IN")}
-														</Typography>
+															{hasMrp(item) ? (
+																<Typography
+																	variant='body2'
+																	color='text.secondary'
+																>
+																	Discount:{" "}
+																	{getDiscountPercentage(item).toFixed(2)}%
+																	{" · "}₹
+																	{getDiscountAmount(item).toLocaleString(
+																		"en-IN",
+																	)}
+																</Typography>
+															) : (
+																<Typography
+																	variant='body2'
+																	color='text.secondary'
+																>
+																	Discount: N/A
+																</Typography>
+															)}
+
+															<Typography
+																sx={{
+																	fontWeight: 700,
+																}}
+															>
+																Line Total: ₹
+																{getLineTotal(item).toLocaleString("en-IN")}
+															</Typography>
+														</Stack>
 													</Stack>
-												</Stack>
-											</Box>
-										))}
+												</Box>
+											))}
+										</Stack>
+									)}
+								</Stack>
+							</CardContent>
+						</Card>
+
+						{/* Summary */}
+						<Card>
+							<CardContent>
+								<Stack spacing={2}>
+									<Typography variant='h6' sx={{ fontWeight: 700 }}>
+										Bill Summary
+									</Typography>
+
+									<Stack
+										direction='row'
+										sx={{
+											justifyContent: "space-between",
+										}}
+									>
+										<Typography color='text.secondary'>Subtotal</Typography>
+
+										<Typography>
+											₹
+											{subtotal.toLocaleString("en-IN", {
+												minimumFractionDigits: 2,
+												maximumFractionDigits: 2,
+											})}
+										</Typography>
 									</Stack>
-								)}
-							</Stack>
-						</CardContent>
-					</Card>
 
-					{/* Summary */}
-					<Card>
-						<CardContent>
-							<Stack spacing={2}>
-								<Typography variant='h6' sx={{ fontWeight: 700 }}>
-									Bill Summary
-								</Typography>
+									<Stack
+										direction='row'
+										sx={{
+											justifyContent: "space-between",
+										}}
+									>
+										<Typography color='text.secondary'>Discount</Typography>
 
-								<Stack
-									direction='row'
-									sx={{
-										justifyContent: "space-between",
-									}}
-								>
-									<Typography color='text.secondary'>Subtotal</Typography>
+										<Typography>
+											₹
+											{totalDiscount.toLocaleString("en-IN", {
+												minimumFractionDigits: 2,
+												maximumFractionDigits: 2,
+											})}
+										</Typography>
+									</Stack>
 
-									<Typography>
-										₹
-										{subtotal.toLocaleString("en-IN", {
-											minimumFractionDigits: 2,
-											maximumFractionDigits: 2,
-										})}
-									</Typography>
+									<Divider />
+
+									<Stack
+										direction='row'
+										sx={{
+											justifyContent: "space-between",
+										}}
+									>
+										<Typography variant='h6' sx={{ fontWeight: 700 }}>
+											Total
+										</Typography>
+
+										<Typography variant='h6' sx={{ fontWeight: 700 }}>
+											₹
+											{grandTotal.toLocaleString("en-IN", {
+												minimumFractionDigits: 2,
+												maximumFractionDigits: 2,
+											})}
+										</Typography>
+									</Stack>
+									<Button
+										variant='contained'
+										size='large'
+										fullWidth
+										onClick={handleGenerateBill}
+										disabled={loading}
+									>
+										{loading ? "Creating Bill..." : "Generate Bill"}
+									</Button>
 								</Stack>
-
-								<Stack
-									direction='row'
-									sx={{
-										justifyContent: "space-between",
-									}}
-								>
-									<Typography color='text.secondary'>Discount</Typography>
-
-									<Typography>
-										₹
-										{totalDiscount.toLocaleString("en-IN", {
-											minimumFractionDigits: 2,
-											maximumFractionDigits: 2,
-										})}
-									</Typography>
-								</Stack>
-
-								<Divider />
-
-								<Stack
-									direction='row'
-									sx={{
-										justifyContent: "space-between",
-									}}
-								>
-									<Typography variant='h6' sx={{ fontWeight: 700 }}>
-										Total
-									</Typography>
-
-									<Typography variant='h6' sx={{ fontWeight: 700 }}>
-										₹
-										{grandTotal.toLocaleString("en-IN", {
-											minimumFractionDigits: 2,
-											maximumFractionDigits: 2,
-										})}
-									</Typography>
-								</Stack>
-								<Button
-									variant='contained'
-									size='large'
-									fullWidth
-									onClick={handleGenerateBill}
-									disabled={loading}
-								>
-									{loading ? "Creating Bill..." : "Generate Bill"}
-								</Button>
-							</Stack>
-						</CardContent>
-					</Card>
-				</Stack>
+							</CardContent>
+						</Card>
+					</Stack>
 				)}
 
 				{invoicePreview && (
@@ -1255,7 +1287,7 @@ export default function BillingPage() {
 								New Bill
 							</Button>
 
-							<Button variant='contained'>
+							<Button variant='contained'  onClick={handleDownloadPdf}>
 								Download PDF
 							</Button>
 						</Stack>
