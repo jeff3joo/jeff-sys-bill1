@@ -4,35 +4,35 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 const invoiceLayout = {
 	customer: {
 		name: {
-			x: 70,
+			x: 55,
 			y: 650,
 		},
 		phone: {
-			x: 70,
+			x: 55,
 			y: 635,
 		},
 	},
 
 	invoice: {
 		number: {
-			x: 400,
+			x: 475,
 			y: 650,
 		},
 		date: {
-			x: 400,
+			x: 475,
 			y: 635,
 		},
 	},
 
 	items: {
-		startY: 560,
+		startY: 600,
 		minRowHeight: 24,
 		endY: 190,
 		nameMaxWidth: 180,
 		totalsHeight: 55,
 
 		columns: {
-			name: 52,
+			name: 55,
 			qty: 273,
 			mrp: 315,
 			tax: 395,
@@ -391,7 +391,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 				maximumFractionDigits: 2,
 			});
 
-		const y = 145;
+		const y = 155;
 		page.drawLine({
 			start: {
 				x: 52,
@@ -448,13 +448,26 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 		const amountInWords = toWords.convert(invoice.grandTotal, {
 			currency: true,
 		});
+		const amountInWordsText = `Amount in Words: ${amountInWords}`;
+		const amountInWordsSize = 8;
+		const amountInWordsX = invoiceLayout.items.columns.name;
+		const amountInWordsY = y - 18;
+		const amountInWordsPadding = 4;
 
-		page.drawText(`Amount in Words: ${amountInWords}`, {
-			x: invoiceLayout.items.columns.name,
-			y: y - 18,
-			size: 8,
+		page.drawRectangle({
+			x: amountInWordsX - amountInWordsPadding,
+			y: amountInWordsY - amountInWordsPadding,
+			width: 500,
+			height: amountInWordsSize + amountInWordsPadding * 2,
+			color: rgb(8 / 255, 45 / 255, 32 / 255),
+		});
+
+		page.drawText(amountInWordsText, {
+			x: amountInWordsX,
+			y: amountInWordsY,
+			size: amountInWordsSize,
 			font,
-			color: rgb(0, 0, 0),
+			color: rgb(1, 1, 1),
 		});
 	};
 
@@ -482,6 +495,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 
 		if (pageIndex === 0) {
 			page = firstPage;
+			drawTableHeader(page);
 		} else {
 			const [copiedPage] = await pdfDoc.copyPages(templateDoc, [0]);
 

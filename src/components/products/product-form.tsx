@@ -46,7 +46,7 @@ type ProductFormOutput = z.output<typeof productSchema>;
 
 interface ProductFormProps {
 	product?: Product;
-	onSuccess?: () => void;
+	onSuccess?: (product?: Product) => void;
 }
 
 export default function ProductForm({ product, onSuccess }: ProductFormProps) {
@@ -92,10 +92,9 @@ export default function ProductForm({ product, onSuccess }: ProductFormProps) {
 
 		try {
 			const supabase = createClient();
-			let error;
 
 			if (product) {
-				const result = await supabase
+				const { data: updatedProduct, error } = await supabase
 					.from("products")
 					.update({
 						name: data.name,
@@ -104,27 +103,41 @@ export default function ProductForm({ product, onSuccess }: ProductFormProps) {
 						mrp: data.mrp,
 						updated_at: new Date().toISOString(),
 					})
-					.eq("id", product.id);
+					.eq("id", product.id)
+					.select()
+					.single();
 
-				error = result.error;
-			} else {
-				const result = await supabase.from("products").insert({
+				if (error) {
+					console.error("Failed to update product:", error);
+					setErrorMessage("Unable to update the item. Please try again.");
+					return;
+				}
+
+				reset();
+				onSuccess?.(updatedProduct as Product);
+				return;
+			}
+
+			const { data: newProduct, error } = await supabase
+				.from("products")
+				.insert({
 					name: data.name,
 					type: data.type,
 					category: data.category,
 					mrp: data.mrp,
-				});
+				})
+				.select()
+				.single();
 
-				error = result.error;
-			}
 			if (error) {
-				console.error("Failed to save product:", error);
+				console.error("Failed to create product:", error);
 				setErrorMessage("Unable to save the item. Please try again.");
 				return;
 			}
 
 			reset();
-			onSuccess?.();
+
+			onSuccess?.(newProduct as Product);
 		} finally {
 			setLoading(false);
 		}

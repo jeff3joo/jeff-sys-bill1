@@ -6,6 +6,9 @@ import {
 	Card,
 	CardContent,
 	Container,
+	Dialog,
+	DialogContent,
+	DialogTitle,
 	Divider,
 	IconButton,
 	Stack,
@@ -33,6 +36,7 @@ import type {
 	InvoicePayload,
 	InvoicePreviewData,
 } from "@/types/billing";
+import ProductForm from "@/components/products/product-form";
 
 export default function BillingPage() {
 	const [loading, setLoading] = useState(false);
@@ -41,6 +45,7 @@ export default function BillingPage() {
 	const [customerEmail, setCustomerEmail] = useState("");
 	const [customerAddress, setCustomerAddress] = useState("");
 	const [customerNameError, setCustomerNameError] = useState("");
+	const [newItemModalOpen, setNewItemModalOpen] = useState(false);
 
 	const [isPreviewMode, setIsPreviewMode] = useState(false);
 	const [invoicePreview, setInvoicePreview] =
@@ -305,6 +310,26 @@ export default function BillingPage() {
 		});
 	};
 
+	const handleNewItemCreated = (product?: Product) => {
+		if (!product) {
+			return;
+		}
+
+		setBillItems((currentItems) => [
+			...currentItems,
+			{
+				productId: product.id,
+				name: product.name,
+				type: product.type,
+				category: product.category,
+				mrp: product.mrp,
+				quantity: 1,
+				sellingPrice: String(product.mrp),
+			},
+		]);
+
+		setNewItemModalOpen(false);
+	};
 	return (
 		<AppShell>
 			<Container
@@ -434,13 +459,21 @@ export default function BillingPage() {
 										}}
 									>
 										<TextField
-											fullWidth
+											sx={{ width: "80%", mr: 2 }}
 											autoComplete='off'
 											value={searchQuery}
 											label='Search products or services'
 											placeholder='Search by name or category...'
 											onChange={(event) => setSearchQuery(event.target.value)}
 										/>
+
+										<Button
+											sx={{ width: "15%" }}
+											variant='outlined'
+											onClick={() => setNewItemModalOpen(true)}
+										>
+											+ New Item
+										</Button>
 
 										{/* Search Results Dropdown */}
 										{searchQuery.trim() && (
@@ -455,7 +488,6 @@ export default function BillingPage() {
 													maxHeight: 320,
 													overflowY: "auto",
 													boxShadow: 3,
-													overflow: "visible",
 												}}
 											>
 												{productsLoading ? (
@@ -1287,12 +1319,24 @@ export default function BillingPage() {
 								New Bill
 							</Button>
 
-							<Button variant='contained'  onClick={handleDownloadPdf}>
+							<Button variant='contained' onClick={handleDownloadPdf}>
 								Download PDF
 							</Button>
 						</Stack>
 					</Box>
 				)}
+				<Dialog
+					open={newItemModalOpen}
+					onClose={() => setNewItemModalOpen(false)}
+					fullWidth
+					maxWidth='sm'
+				>
+					<DialogTitle>Create New Item</DialogTitle>
+
+					<DialogContent>
+						<ProductForm onSuccess={handleNewItemCreated} />
+					</DialogContent>
+				</Dialog>
 			</Container>
 		</AppShell>
 	);
