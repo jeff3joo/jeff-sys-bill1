@@ -124,15 +124,31 @@ export default function BillingPage() {
 			link.download = `${invoicePreview.invoiceNumber}.pdf`;
 
 			document.body.appendChild(link);
-			link.click();
+
+			// iOS Safari does not reliably support
+			// downloading Blob URLs with the download attribute.
+			const isIOS =
+				/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+				(navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+			if (isIOS) {
+				window.open(url, "_blank");
+			} else {
+				link.click();
+			}
+
 			link.remove();
 
-			URL.revokeObjectURL(url);
+			// Give Safari time to load the Blob before
+			// releasing the object URL.
+			setTimeout(() => {
+				URL.revokeObjectURL(url);
+			}, 1000);
 		} catch (error) {
 			console.error("Failed to generate PDF:", error);
 		}
 	};
-
+	
 	const filteredProducts = products.filter((product) => {
 		const query = searchQuery.trim().toLowerCase();
 
