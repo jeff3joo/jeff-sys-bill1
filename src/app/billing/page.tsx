@@ -125,8 +125,6 @@ export default function BillingPage() {
 
 			document.body.appendChild(link);
 
-			// iOS Safari does not reliably support
-			// downloading Blob URLs with the download attribute.
 			const isIOS =
 				/iPad|iPhone|iPod/.test(navigator.userAgent) ||
 				(navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -139,8 +137,6 @@ export default function BillingPage() {
 
 			link.remove();
 
-			// Give Safari time to load the Blob before
-			// releasing the object URL.
 			setTimeout(() => {
 				URL.revokeObjectURL(url);
 			}, 1000);
@@ -148,7 +144,7 @@ export default function BillingPage() {
 			console.error("Failed to generate PDF:", error);
 		}
 	};
-	
+
 	const filteredProducts = products.filter((product) => {
 		const query = searchQuery.trim().toLowerCase();
 
@@ -469,27 +465,36 @@ export default function BillingPage() {
 									</Box>
 
 									{/* Search */}
-									<Box
-										sx={{
-											position: "relative",
-										}}
-									>
-										<TextField
-											sx={{ width: "80%", mr: 2 }}
+									<Box sx={{ position: "relative" }}>
+										<Stack
+											direction={{ xs: "column", sm: "row" }}
+											spacing={2}
+											sx={{
+												alignItems: { xs: "stretch", sm: "flex-start" },
+											}}
+										>
+											<TextField
+												fullWidth
 											autoComplete='off'
 											value={searchQuery}
 											label='Search products or services'
 											placeholder='Search by name or category...'
 											onChange={(event) => setSearchQuery(event.target.value)}
-										/>
+											/>
 
 										<Button
-											sx={{ width: "15%" }}
+											fullWidth
 											variant='outlined'
 											onClick={() => setNewItemModalOpen(true)}
+											sx={{
+												minHeight: 36,
+												width: { xs: "100%", sm: "auto" },
+												whiteSpace: "nowrap",
+											}}
 										>
 											+ New Item
 										</Button>
+										</Stack>
 
 										{/* Search Results Dropdown */}
 										{searchQuery.trim() && (

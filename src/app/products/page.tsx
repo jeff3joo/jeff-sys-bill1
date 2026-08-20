@@ -15,6 +15,7 @@ import {
 	DialogContentText,
 	Dialog,
 	CircularProgress,
+	Pagination,
 } from "@mui/material";
 
 import {
@@ -27,7 +28,7 @@ import { useEffect, useState } from "react";
 import type { Product } from "@/types/product";
 import AppShell from "@/components/layout/app-shell";
 import { createClient } from "@/lib/supabase/client";
-import { getProducts } from "@/lib/products/product-service";
+import { getProductsPaginated } from "@/lib/products/product-service";
 import ProductForm from "@/components/products/product-form";
 import ProductItem from "@/components/products/product-item";
 
@@ -40,22 +41,12 @@ export default function ProductsPage() {
 	const [products, setProducts] = useState<Product[]>([]);
 	const [deleteLoading, setDeleteLoading] = useState(false);
 
+	const [page, setPage] = useState(1);
+	const [totalProducts, setTotalProducts] = useState(0);
+	const pageSize = 10;
+
 	const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 	const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
-
-	const filteredProducts = products.filter((product) => {
-		const query = searchQuery.trim().toLowerCase();
-
-		if (!query) {
-			return true;
-		}
-
-		return (
-			product.name.toLowerCase().includes(query) ||
-			product.category.toLowerCase().includes(query) ||
-			product.type.toLowerCase().includes(query)
-		);
-	});
 
 	const handleEdit = (product: Product) => {
 		setEditingProduct(product);
@@ -84,9 +75,8 @@ export default function ProductsPage() {
 				return;
 			}
 
-			setProducts((currentProducts) =>
-				currentProducts.filter((product) => product.id !== deletingProduct.id),
-			);
+			setDeletingProduct(null);
+			await loadProducts();
 
 			setDeletingProduct(null);
 		} finally {
@@ -99,9 +89,10 @@ export default function ProductsPage() {
 		setErrorMessage("");
 
 		try {
-			const data = await getProducts();
+			const result = await getProductsPaginated(page, pageSize, searchQuery);
 
-			setProducts(data);
+			setProducts(result.products);
+			setTotalProducts(result.total);
 		} catch (error) {
 			console.error("Failed to load products:", error);
 
@@ -113,7 +104,7 @@ export default function ProductsPage() {
 
 	useEffect(() => {
 		loadProducts();
-	}, []);
+	}, [page, searchQuery]);
 
 	return (
 		<AppShell>
@@ -156,6 +147,7 @@ export default function ProductsPage() {
 					value={searchQuery}
 					onChange={(event) => {
 						setSearchQuery(event.target.value);
+						setPage(1);
 					}}
 					placeholder='Search products or services...'
 					fullWidth
@@ -191,7 +183,7 @@ export default function ProductsPage() {
 									onSuccess={async () => {
 										setShowForm(false);
 										setEditingProduct(null);
-										await loadProducts();
+										setPage(1);
 									}}
 								/>
 							</Stack>
@@ -292,35 +284,20 @@ export default function ProductsPage() {
 										}}
 									>
 										<Typography variant='h6' sx={{ fontWeight: 600 }}>
-											No products or services yet
+											{searchQuery
+												? "No matching items"
+												: "No products or services yet"}
 										</Typography>
 
 										<Typography variant='body2' color='text.secondary'>
-											Add your first item to start creating bills.
-										</Typography>
-									</Stack>
-								) : filteredProducts.length === 0 ? (
-									<Stack
-										spacing={1}
-										sx={{
-											minHeight: 200,
-											alignItems: "center",
-											justifyContent: "center",
-											textAlign: "center",
-											px: 2,
-										}}
-									>
-										<Typography variant='h6' sx={{ fontWeight: 600 }}>
-											No matching items
-										</Typography>
-
-										<Typography variant='body2' color='text.secondary'>
-											Try a different product name, category, or service.
+											{searchQuery
+												? "Try a different product name, category, or service."
+												: "Add your first item to start creating bills."}
 										</Typography>
 									</Stack>
 								) : (
 									<Stack>
-										{filteredProducts.map((product) => (
+										{products.map((product) => (
 											<ProductItem
 												key={product.id}
 												product={product}
@@ -335,6 +312,24 @@ export default function ProductsPage() {
 							</Box>
 						)}
 					</CardContent>
+					{!loading && !errorMessage && totalProducts > pageSize && (
+						<Box
+							sx={{
+								display: "flex",
+								justifyContent: "center",
+								px: 2,
+								pb: 3,
+							}}
+						>
+							<Pagination
+								count={Math.ceil(totalProducts / pageSize)}
+								page={page}
+								onChange={(_, value) => {
+									setPage(value);
+								}}
+							/>
+						</Box>
+					)}
 				</Card>
 			</Stack>
 			<Dialog
