@@ -23,6 +23,8 @@ import {
 	getDiscountAmount,
 	getDiscountPercentage,
 	hasMrp,
+	getTotalTax,
+	getTaxAmount,
 } from "@/lib/calculations/billing";
 import { Product } from "@/types/product";
 import { createInvoiceWithItems } from "./actions";
@@ -58,7 +60,7 @@ export default function BillingPage() {
 	const [productsLoading, setProductsLoading] = useState(false);
 	const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
 
-	const taxTotal = 0;
+	const taxTotal = getTotalTax(billItems);
 	const subtotal = getSubtotal(billItems);
 	const grandTotal = getGrandTotal(billItems);
 	const totalDiscount = getTotalDiscount(billItems);
@@ -246,6 +248,7 @@ export default function BillingPage() {
 				quantity: item.quantity,
 				discount: getDiscountAmount(item),
 				discountPercentage: getDiscountPercentage(item),
+				tax: getTaxAmount(item),
 				lineTotal: getLineTotal(item),
 			}));
 
@@ -258,7 +261,7 @@ export default function BillingPage() {
 					customerAddress: customerAddress.trim(),
 					subtotal,
 					discountTotal: totalDiscount,
-					taxTotal: 0,
+					taxTotal,
 					grandTotal,
 				},
 				invoiceItems,
@@ -276,7 +279,7 @@ export default function BillingPage() {
 
 				subtotal,
 				discountTotal: totalDiscount,
-				taxTotal: 0,
+				taxTotal,
 				grandTotal,
 
 				items: invoiceItems,
@@ -475,25 +478,25 @@ export default function BillingPage() {
 										>
 											<TextField
 												fullWidth
-											autoComplete='off'
-											value={searchQuery}
-											label='Search products or services'
-											placeholder='Search by name or category...'
-											onChange={(event) => setSearchQuery(event.target.value)}
+												autoComplete='off'
+												value={searchQuery}
+												label='Search products or services'
+												placeholder='Search by name or category...'
+												onChange={(event) => setSearchQuery(event.target.value)}
 											/>
 
-										<Button
-											fullWidth
-											variant='outlined'
-											onClick={() => setNewItemModalOpen(true)}
-											sx={{
-												minHeight: 36,
-												width: { xs: "100%", sm: "auto" },
-												whiteSpace: "nowrap",
-											}}
-										>
-											+ New Item
-										</Button>
+											<Button
+												fullWidth
+												variant='outlined'
+												onClick={() => setNewItemModalOpen(true)}
+												sx={{
+													minHeight: 36,
+													width: { xs: "100%", sm: "auto" },
+													whiteSpace: "nowrap",
+												}}
+											>
+												+ New Item
+											</Button>
 										</Stack>
 
 										{/* Search Results Dropdown */}

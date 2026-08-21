@@ -70,5 +70,6 @@ export type InvoicePreviewData = {
 		discount: number;
 		discountPercentage: number;
 		lineTotal: number;
+		tax: number;
 	}[];
 };

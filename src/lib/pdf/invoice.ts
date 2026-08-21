@@ -34,7 +34,7 @@ const invoiceLayout = {
 		columns: {
 			name: 55,
 			qty: 273,
-			mrp: 315,
+			amount: 315,
 			tax: 395,
 			discount: 440,
 			total: 493,
@@ -73,6 +73,7 @@ type InvoicePdfData = {
 		sellingPrice: number;
 		discount: number;
 		lineTotal: number;
+		tax: number;
 	}[];
 };
 
@@ -237,13 +238,20 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			color: rgb(0, 0, 0),
 		});
 
+		// MRP is GST-inclusive.
+		// Display taxable amount excluding 18% GST.
+		const amountWithoutTax =
+			item.mrp > 0
+				? (item.mrp / 1.18) * item.quantity
+				: item.sellingPrice * item.quantity;
+
 		page.drawText(
-			item.mrp.toLocaleString("en-IN", {
+			amountWithoutTax.toLocaleString("en-IN", {
 				minimumFractionDigits: 2,
 				maximumFractionDigits: 2,
 			}),
 			{
-				x: invoiceLayout.items.columns.mrp,
+				x: invoiceLayout.items.columns.amount,
 				y,
 				size: fontSize,
 				font,
@@ -251,13 +259,19 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			},
 		);
 
-		page.drawText("0.00", {
-			x: invoiceLayout.items.columns.tax,
-			y,
-			size: fontSize,
-			font,
-			color: rgb(0, 0, 0),
-		});
+		page.drawText(
+			item.tax.toLocaleString("en-IN", {
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2,
+			}),
+			{
+				x: invoiceLayout.items.columns.tax,
+				y,
+				size: fontSize,
+				font,
+				color: rgb(0, 0, 0),
+			},
+		);
 
 		page.drawText(
 			item.discount.toLocaleString("en-IN", {
@@ -326,8 +340,8 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			color: rgb(0, 0, 0),
 		});
 
-		page.drawText("MRP", {
-			x: invoiceLayout.items.columns.mrp,
+		page.drawText("Amount", {
+			x: invoiceLayout.items.columns.amount,
 			y,
 			size: 8,
 			font: boldFont,
@@ -350,7 +364,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			color: rgb(0, 0, 0),
 		});
 
-		page.drawText("Total Amount", {
+		page.drawText("Total", {
 			x: invoiceLayout.items.columns.total,
 			y,
 			size: 8,
@@ -377,10 +391,14 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			(total, item) => total + item.quantity,
 			0,
 		);
-		const totalMrp = invoice.items.reduce(
-			(total, item) => total + item.mrp * item.quantity,
-			0,
-		);
+		const totalAmountWithoutTax = invoice.items.reduce((total, item) => {
+			const amount =
+				item.mrp > 0
+					? (item.mrp / 1.18) * item.quantity
+					: item.sellingPrice * item.quantity;
+
+			return total + amount;
+		}, 0);
 		const totalDiscount = invoice.items.reduce(
 			(total, item) => total + item.discount,
 			0,
@@ -413,8 +431,8 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			color: rgb(0, 0, 0),
 		});
 
-		page.drawText(formatAmount(totalMrp), {
-			x: invoiceLayout.items.columns.mrp,
+		page.drawText(formatAmount(totalAmountWithoutTax), {
+			x: invoiceLayout.items.columns.amount,
 			y,
 			size: 8,
 			font: boldFont,
