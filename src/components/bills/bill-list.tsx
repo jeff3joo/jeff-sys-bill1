@@ -6,6 +6,8 @@ interface BillListProps {
 	error: boolean;
 	bills: Bill[];
 	hasFilters: boolean;
+	downloadingBillId?: string | null;
+	deletingBillId?: string | null;
 	onRetry: () => void;
 	onEdit: (bill: Bill) => void;
 	onDownloadPdf: (bill: Bill) => void;
@@ -17,6 +19,8 @@ export default function BillList({
 	error,
 	bills,
 	hasFilters,
+	downloadingBillId = null,
+	deletingBillId = null,
 	onRetry,
 	onEdit,
 	onDownloadPdf,
@@ -29,7 +33,7 @@ export default function BillList({
 				{loading && <ListMessage><CircularProgress size={28} /><Typography variant='body2' color='text.secondary'>Loading bills...</Typography></ListMessage>}
 				{!loading && error && <ListMessage><Typography variant='h6' sx={{ fontWeight: 600 }}>Couldn&apos;t load bills</Typography><Button variant='outlined' onClick={onRetry}>Try Again</Button></ListMessage>}
 				{!loading && !error && bills.length === 0 && <ListMessage><Typography variant='h6' sx={{ fontWeight: 600 }}>{hasFilters ? "No matching bills found" : "No bills generated yet"}</Typography></ListMessage>}
-				{!loading && !error && bills.length > 0 && <Stack>{bills.map((bill) => <BillItem key={bill.id} bill={bill} onEdit={onEdit} onDownloadPdf={onDownloadPdf} onDelete={onDelete} />)}</Stack>}
+				{!loading && !error && bills.length > 0 && <Stack>{bills.map((bill) => <BillItem key={bill.id} bill={bill} downloadLoading={downloadingBillId === bill.id} actionsDisabled={deletingBillId !== null} onEdit={onEdit} onDownloadPdf={onDownloadPdf} onDelete={onDelete} />)}</Stack>}
 			</CardContent>
 		</Card>
 	);

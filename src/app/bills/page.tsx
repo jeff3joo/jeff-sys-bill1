@@ -1,8 +1,20 @@
 "use client";
 
-import { Box, Button, Stack, Typography } from "@mui/material";
+import {
+	Alert,
+	Box,
+	Button,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogContentText,
+	DialogTitle,
+	Stack,
+	Typography,
+} from "@mui/material";
 import { AddOutlined } from "@mui/icons-material";
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import AppShell from "@/components/layout/app-shell";
 import BillList from "@/components/bills/bill-list";
 import { type Bill } from "@/components/bills/bill-item";
@@ -10,8 +22,13 @@ import BillPagination from "@/components/bills/bill-pagination";
 import BillToolbar, { type BillDateFilter } from "@/components/bills/bill-toolbar";
 import {
 	getInvoicesPaginated,
+	getInvoiceWithItems,
 	type InvoiceDateRange,
 } from "@/lib/invoices/invoice-service";
+import { createInvoicePdf } from "@/lib/pdf/invoice";
+import { getDiscountAmount } from "@/lib/calculations/billing";
+import type { InvoicePreviewData } from "@/types/billing";
+import { deleteInvoice } from "@/app/billing/actions";
 
 const PAGE_SIZE = 10;
 
@@ -25,6 +42,12 @@ export default function BillsPage() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(false);
 	const [page, setPage] = useState(1);
+	const [downloadingBillId, setDownloadingBillId] = useState<string | null>(null);
+	const [actionError, setActionError] = useState("");
+	const [deletingBill, setDeletingBill] = useState<Bill | null>(null);
+	const [deleteError, setDeleteError] = useState("");
+	const [deleteLoading, setDeleteLoading] = useState(false);
+	const router = useRouter();
 
 	const getLocalDayStart = (date: Date) => {
 		const start = new Date(date);
@@ -136,9 +159,103 @@ export default function BillsPage() {
 
 	const totalPages = Math.ceil(total / PAGE_SIZE);
 
+	const handleEdit = (bill: Bill) => {
+		router.push(`/billing?invoiceId=${encodeURIComponent(bill.id)}`);
+	};
+
+	const handleDownloadPdf = async (bill: Bill) => {
+		if (downloadingBillId) {
+			return;
+		}
+
+		setDownloadingBillId(bill.id);
+		setActionError("");
+
+		try {
+			const { invoice, items } = await getInvoiceWithItems(bill.id);
+			const pdfItems = items.map((item) => ({
+				lineItemId: item.id,
+				productId: item.product_id,
+				name: item.name,
+				type: item.type,
+				category: item.category,
+				quantity: item.quantity,
+				mrp: item.mrp,
+				sellingPrice: item.selling_price,
+				discount: getDiscountAmount({
+						lineItemId: item.product_id,
+					productId: item.product_id,
+					name: item.name,
+					type: item.type,
+					category: item.category,
+					mrp: item.mrp,
+					quantity: item.quantity,
+					sellingPrice: String(item.selling_price),
+				}),
+				discountPercentage: item.discount_percentage,
+				lineTotal: item.line_total,
+				tax: item.tax,
+			}));
+			const pdfData: InvoicePreviewData = {
+				invoiceNumber: invoice.invoice_number,
+				createdAt: invoice.created_at,
+				customerName: invoice.customer_name,
+				customerPhone: invoice.customer_phone,
+				customerEmail: invoice.customer_email,
+				customerAddress: invoice.customer_address,
+				subtotal: invoice.subtotal,
+				discountTotal: invoice.discount_total,
+				taxTotal: invoice.tax_total,
+				grandTotal: invoice.grand_total,
+				items: pdfItems,
+			};
+			const pdfBytes = await createInvoicePdf(pdfData);
+			const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = `${invoice.invoice_number}.pdf`;
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			setTimeout(() => URL.revokeObjectURL(url), 1000);
+		} catch (downloadError) {
+			console.error("Failed to download invoice PDF:", downloadError);
+			setActionError("Unable to download this bill. Please try again.");
+		} finally {
+			setDownloadingBillId(null);
+		}
+	};
+
+	const handleDelete = async () => {
+		if (!deletingBill || deleteLoading) {
+			return;
+		}
+
+		setDeleteLoading(true);
+		setDeleteError("");
+
+		try {
+			await deleteInvoice(deletingBill.id);
+			setDeletingBill(null);
+
+			if (bills.length === 1 && page > 1) {
+				setPage(page - 1);
+			} else {
+				await loadBills(page);
+			}
+		} catch (deleteActionError) {
+			console.error("Failed to delete invoice:", deleteActionError);
+			setDeleteError("Unable to delete this bill. Please try again.");
+		} finally {
+			setDeleteLoading(false);
+		}
+	};
+
 	return (
 		<AppShell>
 			<Stack spacing={4}>
+				{actionError && <Alert severity='error'>{actionError}</Alert>}
 				<Box sx={{ display: "flex", alignItems: { xs: "flex-start", sm: "center" }, justifyContent: "space-between", gap: 2, flexDirection: { xs: "column", sm: "row" } }}>
 					<Box>
 						<Typography variant='h4' sx={{ fontWeight: 700 }}>Bills</Typography>
@@ -164,9 +281,34 @@ export default function BillsPage() {
 						setPage(1);
 					}}
 				/>
-				<BillList loading={loading} error={error} bills={bills} hasFilters={Boolean(searchQuery.trim()) || dateFilter !== "all"} onRetry={() => void loadBills(page)} onEdit={() => undefined} onDownloadPdf={() => undefined} onDelete={() => undefined} />
+				<BillList loading={loading} error={error} bills={bills} hasFilters={Boolean(searchQuery.trim()) || dateFilter !== "all"} downloadingBillId={downloadingBillId} deletingBillId={deletingBill?.id ?? null} onRetry={() => void loadBills(page)} onEdit={handleEdit} onDownloadPdf={handleDownloadPdf} onDelete={(bill) => { setDeleteError(""); setDeletingBill(bill); }} />
 				<BillPagination page={page} totalPages={totalPages} onPageChange={setPage} />
 			</Stack>
+			<Dialog
+				open={deletingBill !== null}
+				onClose={() => {
+					if (!deleteLoading) {
+						setDeletingBill(null);
+						setDeleteError("");
+					}
+				}}
+				fullWidth
+				maxWidth='xs'
+			>
+				<DialogTitle>Delete {deletingBill?.invoiceNumber}?</DialogTitle>
+				<DialogContent>
+					<DialogContentText>
+						This bill and its invoice items will be permanently deleted.
+					</DialogContentText>
+					{deleteError && <Typography color='error' sx={{ mt: 2 }}>{deleteError}</Typography>}
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setDeletingBill(null)} disabled={deleteLoading}>Cancel</Button>
+					<Button onClick={() => void handleDelete()} color='error' variant='contained' disabled={deleteLoading}>
+						{deleteLoading ? "Deleting..." : "Delete"}
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</AppShell>
 	);
 }

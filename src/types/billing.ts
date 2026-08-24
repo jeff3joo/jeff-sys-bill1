@@ -1,4 +1,5 @@
 export type BillItem = {
+	lineItemId: string;
 	productId: string;
 	name: string;
 	type: "product" | "service";
@@ -60,6 +61,7 @@ export type InvoicePreviewData = {
 	grandTotal: number;
 
 	items: {
+		lineItemId: string;
 		productId: string;
 		name: string;
 		type: "product" | "service";

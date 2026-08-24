@@ -20,6 +20,8 @@ export interface Bill {
 
 interface BillItemProps {
 	bill: Bill;
+	downloadLoading?: boolean;
+	actionsDisabled?: boolean;
 	onEdit: (bill: Bill) => void;
 	onDownloadPdf: (bill: Bill) => void;
 	onDelete: (bill: Bill) => void;
@@ -27,6 +29,8 @@ interface BillItemProps {
 
 export default function BillItem({
 	bill,
+	downloadLoading = false,
+	actionsDisabled = false,
 	onEdit,
 	onDownloadPdf,
 	onDelete,
@@ -74,13 +78,13 @@ export default function BillItem({
 				</Stack>
 
 				<Stack direction='row' spacing={0.5} sx={{ alignSelf: { xs: "flex-end", md: "auto" } }}>
-					<IconButton aria-label={`Edit ${bill.invoiceNumber}`} onClick={() => onEdit(bill)}>
+					<IconButton aria-label={`Edit ${bill.invoiceNumber}`} onClick={() => onEdit(bill)} disabled={actionsDisabled}>
 						<EditOutlined />
 					</IconButton>
-					<IconButton aria-label={`Download PDF for ${bill.invoiceNumber}`} onClick={() => onDownloadPdf(bill)}>
-						<DownloadOutlined />
+					<IconButton aria-label={`Download PDF for ${bill.invoiceNumber}`} onClick={() => onDownloadPdf(bill)} disabled={downloadLoading || actionsDisabled}>
+						{downloadLoading ? "..." : <DownloadOutlined />}
 					</IconButton>
-					<IconButton aria-label={`Delete ${bill.invoiceNumber}`} color='error' onClick={() => onDelete(bill)}>
+					<IconButton aria-label={`Delete ${bill.invoiceNumber}`} color='error' onClick={() => onDelete(bill)} disabled={actionsDisabled}>
 						<DeleteOutlined />
 					</IconButton>
 				</Stack>

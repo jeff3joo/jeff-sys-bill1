@@ -27,12 +27,13 @@ import {
 	getTaxAmount,
 } from "@/lib/calculations/billing";
 import { Product } from "@/types/product";
-import { createInvoiceWithItems } from "./actions";
+import { createInvoiceWithItems, updateInvoiceWithItems } from "./actions";
 import { useEffect, useRef, useState } from "react";
 import { DeleteOutlined } from "@mui/icons-material";
 import AppShell from "@/components/layout/app-shell";
 import { createInvoicePdf } from "@/lib/pdf/invoice";
 import { getProducts } from "@/lib/products/product-service";
+import { getInvoiceWithItems } from "@/lib/invoices/invoice-service";
 import type {
 	BillItem,
 	InvoicePayload,
@@ -42,6 +43,8 @@ import ProductForm from "@/components/products/product-form";
 
 export default function BillingPage() {
 	const [loading, setLoading] = useState(false);
+	const [invoiceLoading, setInvoiceLoading] = useState(false);
+	const [invoiceLoadError, setInvoiceLoadError] = useState("");
 	const [customerName, setCustomerName] = useState("");
 	const [customerPhone, setCustomerPhone] = useState("");
 	const [customerEmail, setCustomerEmail] = useState("");
@@ -59,6 +62,7 @@ export default function BillingPage() {
 	const invoicePreviewRef = useRef<HTMLDivElement | null>(null);
 	const [productsLoading, setProductsLoading] = useState(false);
 	const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
+	const invoiceLoadRequestRef = useRef(0);
 
 	const taxTotal = getTotalTax(billItems);
 	const subtotal = getSubtotal(billItems);
@@ -92,6 +96,66 @@ export default function BillingPage() {
 		};
 
 		loadProducts();
+	}, []);
+
+	useEffect(() => {
+		const invoiceId = new URLSearchParams(window.location.search).get(
+			"invoiceId",
+		);
+
+		if (!invoiceId) {
+			return;
+		}
+
+		const requestId = invoiceLoadRequestRef.current + 1;
+		invoiceLoadRequestRef.current = requestId;
+		let cancelled = false;
+
+		const loadInvoice = async () => {
+			setInvoiceLoading(true);
+			setInvoiceLoadError("");
+
+			try {
+				const { invoice, items } = await getInvoiceWithItems(invoiceId);
+
+				if (cancelled || invoiceLoadRequestRef.current !== requestId) {
+					return;
+				}
+
+				setEditingInvoiceId(invoice.id);
+				setCustomerName(invoice.customer_name);
+				setCustomerPhone(invoice.customer_phone);
+				setCustomerEmail(invoice.customer_email);
+				setCustomerAddress(invoice.customer_address);
+				setBillItems(
+					items.map((item) => ({
+						lineItemId: item.id,
+						productId: item.product_id,
+						name: item.name,
+						type: item.type,
+						category: item.category,
+						mrp: item.mrp,
+						quantity: item.quantity,
+						sellingPrice: String(item.selling_price),
+					})),
+				);
+			} catch (error) {
+				if (cancelled || invoiceLoadRequestRef.current !== requestId) {
+					return;
+				}
+
+				console.error("Failed to load invoice:", error);
+				setInvoiceLoadError("Unable to load this bill. Please try again.");
+			} finally {
+				setInvoiceLoading(false);
+			}
+		};
+
+		void loadInvoice();
+
+		return () => {
+			cancelled = true;
+		};
 	}, []);
 
 	const validateCustomerDetails = () => {
@@ -180,6 +244,7 @@ export default function BillingPage() {
 			return [
 				...currentItems,
 				{
+					lineItemId: crypto.randomUUID(),
 					productId: product.id,
 					name: product.name,
 					type: product.type,
@@ -194,14 +259,14 @@ export default function BillingPage() {
 		setSearchQuery("");
 	};
 
-	const updateItemQuantity = (productId: string, quantity: number) => {
+	const updateItemQuantity = (lineItemId: string, quantity: number) => {
 		if (quantity < 1) {
 			return;
 		}
 
 		setBillItems((currentItems) =>
 			currentItems.map((item) =>
-				item.productId === productId
+				item.lineItemId === lineItemId
 					? {
 							...item,
 							quantity,
@@ -211,10 +276,10 @@ export default function BillingPage() {
 		);
 	};
 
-	const updateItemSellingPrice = (productId: string, sellingPrice: string) => {
+	const updateItemSellingPrice = (lineItemId: string, sellingPrice: string) => {
 		setBillItems((currentItems) =>
 			currentItems.map((item) =>
-				item.productId === productId
+				item.lineItemId === lineItemId
 					? {
 							...item,
 							sellingPrice,
@@ -224,9 +289,9 @@ export default function BillingPage() {
 		);
 	};
 
-	const removeItemFromBill = (productId: string) => {
+	const removeItemFromBill = (lineItemId: string) => {
 		setBillItems((currentItems) =>
-			currentItems.filter((item) => item.productId !== productId),
+			currentItems.filter((item) => item.lineItemId !== lineItemId),
 		);
 	};
 
@@ -238,7 +303,19 @@ export default function BillingPage() {
 		try {
 			setLoading(true);
 
+			console.log(
+				"Saving bill items:",
+				billItems.map((item) => ({
+					lineItemId: item.lineItemId,
+					productId: item.productId,
+					name: item.name,
+					sellingPrice: item.sellingPrice,
+					quantity: item.quantity,
+				})),
+			);
+			
 			const invoiceItems = billItems.map((item) => ({
+				lineItemId: item.lineItemId,
 				productId: item.productId,
 				name: item.name,
 				type: item.type,
@@ -252,20 +329,24 @@ export default function BillingPage() {
 				lineTotal: getLineTotal(item),
 			}));
 
-			const invoice = await createInvoiceWithItems(
-				{
-					invoiceId: editingInvoiceId,
-					customerName: customerName.trim(),
-					customerPhone: customerPhone.trim(),
-					customerEmail: customerEmail.trim(),
-					customerAddress: customerAddress.trim(),
-					subtotal,
-					discountTotal: totalDiscount,
-					taxTotal,
-					grandTotal,
-				},
-				invoiceItems,
-			);
+			const invoiceInput = {
+				invoiceId: editingInvoiceId,
+				customerName: customerName.trim(),
+				customerPhone: customerPhone.trim(),
+				customerEmail: customerEmail.trim(),
+				customerAddress: customerAddress.trim(),
+				subtotal,
+				discountTotal: totalDiscount,
+				taxTotal,
+				grandTotal,
+			};
+			const invoice = editingInvoiceId
+				? await updateInvoiceWithItems(
+						editingInvoiceId,
+						invoiceInput,
+						invoiceItems,
+					)
+				: await createInvoiceWithItems(invoiceInput, invoiceItems);
 			setEditingInvoiceId(invoice.id);
 
 			const previewData: InvoicePreviewData = {
@@ -333,6 +414,7 @@ export default function BillingPage() {
 		setBillItems((currentItems) => [
 			...currentItems,
 			{
+				lineItemId: crypto.randomUUID(),
 				productId: product.id,
 				name: product.name,
 				type: product.type,
@@ -356,6 +438,16 @@ export default function BillingPage() {
 					},
 				}}
 			>
+				{invoiceLoading && (
+					<Typography color='text.secondary' sx={{ mb: 3 }}>
+						Loading bill...
+					</Typography>
+				)}
+				{invoiceLoadError && (
+					<Typography color='error' sx={{ mb: 3 }}>
+						{invoiceLoadError}
+					</Typography>
+				)}
 				{!invoicePreview && (
 					<Stack spacing={4}>
 						{/* Header */}
@@ -367,11 +459,13 @@ export default function BillingPage() {
 									mb: 1,
 								}}
 							>
-								New Bill
+								{editingInvoiceId ? "Edit Bill" : "New Bill"}
 							</Typography>
 
 							<Typography variant='body1' color='text.secondary'>
-								Create a new invoice for your customer.
+								{editingInvoiceId
+									? "Update the saved invoice for your customer."
+									: "Create a new invoice for your customer."}
 							</Typography>
 						</Box>
 
@@ -619,7 +713,7 @@ export default function BillingPage() {
 										<Stack spacing={1.5}>
 											{billItems.map((item) => (
 												<Box
-													key={item.productId}
+													key={item.lineItemId}
 													sx={{
 														p: 2,
 														border: "1px solid",
@@ -657,7 +751,7 @@ export default function BillingPage() {
 															<IconButton
 																aria-label={`Remove ${item.name}`}
 																onClick={() =>
-																	removeItemFromBill(item.productId)
+																	removeItemFromBill(item.lineItemId)
 																}
 																size='small'
 															>
@@ -726,7 +820,7 @@ export default function BillingPage() {
 																		size='small'
 																		onClick={() =>
 																			updateItemQuantity(
-																				item.productId,
+																				item.lineItemId,
 																				item.quantity - 1,
 																			)
 																		}
@@ -756,7 +850,7 @@ export default function BillingPage() {
 																		size='small'
 																		onClick={() =>
 																			updateItemQuantity(
-																				item.productId,
+																				item.lineItemId,
 																				item.quantity + 1,
 																			)
 																		}
@@ -789,7 +883,7 @@ export default function BillingPage() {
 																			Number(value) <= item.mrp
 																		) {
 																			updateItemSellingPrice(
-																				item.productId,
+																				item.lineItemId,
 																				value,
 																			);
 																		}
@@ -930,7 +1024,13 @@ export default function BillingPage() {
 										onClick={handleGenerateBill}
 										disabled={loading}
 									>
-										{loading ? "Creating Bill..." : "Generate Bill"}
+										{loading
+											? editingInvoiceId
+												? "Updating Bill..."
+												: "Creating Bill..."
+											: editingInvoiceId
+												? "Update Bill"
+												: "Generate Bill"}
 									</Button>
 								</Stack>
 							</CardContent>
@@ -1130,7 +1230,7 @@ export default function BillingPage() {
 
 												<Box component='tbody'>
 													{invoicePreview.items.map((item) => (
-														<Box component='tr' key={item.productId}>
+														<Box component='tr' key={item.lineItemId}>
 															<Box
 																component='td'
 																sx={{
