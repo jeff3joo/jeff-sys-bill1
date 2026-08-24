@@ -27,7 +27,11 @@ export default function BillsPage() {
 		setError(false);
 
 		try {
-			const result = await getInvoicesPaginated(requestedPage, PAGE_SIZE);
+			const result = await getInvoicesPaginated(
+				requestedPage,
+				PAGE_SIZE,
+				searchQuery,
+			);
 			const totalPages = Math.max(1, Math.ceil(result.total / PAGE_SIZE));
 			setTotal(result.total);
 
@@ -56,7 +60,7 @@ export default function BillsPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [searchQuery]);
 
 	useEffect(() => {
 		void Promise.resolve().then(() => loadBills(page));
@@ -76,7 +80,7 @@ export default function BillsPage() {
 				</Box>
 
 				<BillToolbar searchQuery={searchQuery} dateFilter={dateFilter} onSearchQueryChange={(value) => { setSearchQuery(value); setPage(1); }} onDateFilterChange={(value) => { setDateFilter(value); setPage(1); }} />
-				<BillList loading={loading} error={error} bills={bills} hasFilters={false} onRetry={() => void loadBills(page)} onEdit={() => undefined} onDownloadPdf={() => undefined} onDelete={() => undefined} />
+				<BillList loading={loading} error={error} bills={bills} hasFilters={Boolean(searchQuery.trim())} onRetry={() => void loadBills(page)} onEdit={() => undefined} onDownloadPdf={() => undefined} onDelete={() => undefined} />
 				<BillPagination page={page} totalPages={totalPages} onPageChange={setPage} />
 			</Stack>
 		</AppShell>

@@ -16,17 +16,29 @@ interface PaginatedInvoices {
 export async function getInvoicesPaginated(
 	page: number,
 	pageSize: number,
+	searchQuery: string = "",
 ): Promise<PaginatedInvoices> {
 	const supabase = createClient();
 	const from = (page - 1) * pageSize;
 	const to = from + pageSize - 1;
+	const search = searchQuery.trim();
 
-	const { data, error, count } = await supabase
+	let query = supabase
 		.from("invoices")
 		.select(
 			"id, invoice_number, customer_name, created_at, grand_total",
 			{ count: "exact" },
-		)
+		);
+
+	if (search) {
+		const escapedSearch = search.replace(/[%_,]/g, "\\$&");
+
+		query = query.or(
+			`customer_name.ilike.%${escapedSearch}%,invoice_number.ilike.%${escapedSearch}%`,
+		);
+	}
+
+	const { data, error, count } = await query
 		.order("created_at", { ascending: false })
 		.range(from, to);
 
