@@ -15,6 +15,7 @@ import {
   Inventory2Outlined,
   ReceiptLongOutlined,
   LogoutOutlined,
+  HistoryOutlined,
 } from "@mui/icons-material";
 
 import { useRouter } from "next/navigation";
@@ -36,6 +37,11 @@ const navigationItems = [
 		href: "/billing",
 		icon: <ReceiptLongOutlined />,
 	},
+	{
+		label: "Bills",
+		href: "/bills",
+		icon: <HistoryOutlined />
+	}
 	// {
 	// 	label: "Settings",
 	// 	href: "/settings",
