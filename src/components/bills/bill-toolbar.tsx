@@ -12,8 +12,12 @@ export type BillDateFilter = "all" | "today" | "week" | "month" | "custom";
 export interface BillToolbarProps {
 	searchQuery: string;
 	dateFilter: BillDateFilter;
+	fromDate: string;
+	toDate: string;
 	onSearchQueryChange: (value: string) => void;
 	onDateFilterChange: (value: BillDateFilter) => void;
+	onFromDateChange: (value: string) => void;
+	onToDateChange: (value: string) => void;
 }
 
 const dateFilterOptions: { label: string; value: BillDateFilter }[] = [
@@ -27,11 +31,23 @@ const dateFilterOptions: { label: string; value: BillDateFilter }[] = [
 export default function BillToolbar({
 	searchQuery,
 	dateFilter,
+	fromDate,
+	toDate,
 	onSearchQueryChange,
 	onDateFilterChange,
+	onFromDateChange,
+	onToDateChange,
 }: BillToolbarProps) {
+	const currentDate = new Date();
+	const today = [
+		currentDate.getFullYear(),
+		String(currentDate.getMonth() + 1).padStart(2, "0"),
+		String(currentDate.getDate()).padStart(2, "0"),
+	].join("-");
+
 	return (
-		<Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+		<Stack spacing={2}>
+			<Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
 			<TextField
 				value={searchQuery}
 				onChange={(event) => onSearchQueryChange(event.target.value)}
@@ -55,6 +71,33 @@ export default function BillToolbar({
 					<MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
 				))}
 			</Select>
+			</Stack>
+			{dateFilter === "custom" && (
+				<Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+					<TextField
+						label='From Date'
+						type='date'
+						value={fromDate}
+						onChange={(event) => onFromDateChange(event.target.value)}
+						slotProps={{
+							inputLabel: { shrink: true },
+							htmlInput: { max: today },
+						}}
+						fullWidth
+					/>
+					<TextField
+						label='To Date'
+						type='date'
+						value={toDate}
+						onChange={(event) => onToDateChange(event.target.value)}
+						slotProps={{
+							inputLabel: { shrink: true },
+							htmlInput: { max: today, min: fromDate || undefined },
+						}}
+						fullWidth
+					/>
+				</Stack>
+			)}
 		</Stack>
 	);
 }

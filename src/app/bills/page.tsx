@@ -8,18 +8,85 @@ import BillList from "@/components/bills/bill-list";
 import { type Bill } from "@/components/bills/bill-item";
 import BillPagination from "@/components/bills/bill-pagination";
 import BillToolbar, { type BillDateFilter } from "@/components/bills/bill-toolbar";
-import { getInvoicesPaginated } from "@/lib/invoices/invoice-service";
+import {
+	getInvoicesPaginated,
+	type InvoiceDateRange,
+} from "@/lib/invoices/invoice-service";
 
 const PAGE_SIZE = 10;
 
 export default function BillsPage() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [dateFilter, setDateFilter] = useState<BillDateFilter>("all");
+	const [fromDate, setFromDate] = useState("");
+	const [toDate, setToDate] = useState("");
 	const [bills, setBills] = useState<Bill[]>([]);
 	const [total, setTotal] = useState(0);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(false);
 	const [page, setPage] = useState(1);
+
+	const getLocalDayStart = (date: Date) => {
+		const start = new Date(date);
+		start.setHours(0, 0, 0, 0);
+		return start;
+	};
+
+	const getLocalDayEnd = (date: Date) => {
+		const end = new Date(date);
+		end.setHours(23, 59, 59, 999);
+		return end;
+	};
+
+	const getDateRange = useCallback((): InvoiceDateRange | undefined => {
+		const now = new Date();
+
+		if (dateFilter === "today") {
+			return {
+				from: getLocalDayStart(now).toISOString(),
+				to: getLocalDayEnd(now).toISOString(),
+			};
+		}
+
+		if (dateFilter === "week") {
+			const daysSinceMonday = (now.getDay() + 6) % 7;
+			const start = getLocalDayStart(now);
+			start.setDate(start.getDate() - daysSinceMonday);
+
+			return {
+				from: start.toISOString(),
+				to: getLocalDayEnd(now).toISOString(),
+			};
+		}
+
+		if (dateFilter === "month") {
+			const start = getLocalDayStart(now);
+			start.setDate(1);
+
+			return {
+				from: start.toISOString(),
+				to: getLocalDayEnd(now).toISOString(),
+			};
+		}
+
+		if (dateFilter === "custom") {
+			const range: InvoiceDateRange = {};
+
+			if (fromDate) {
+				const parsedFromDate = new Date(`${fromDate}T00:00:00`);
+				range.from = getLocalDayStart(parsedFromDate).toISOString();
+			}
+
+			if (toDate) {
+				const parsedToDate = new Date(`${toDate}T00:00:00`);
+				range.to = getLocalDayEnd(parsedToDate).toISOString();
+			}
+
+			return range.from || range.to ? range : undefined;
+		}
+
+		return undefined;
+	}, [dateFilter, fromDate, toDate]);
 
 	const loadBills = useCallback(async (requestedPage: number) => {
 		await Promise.resolve();
@@ -31,6 +98,7 @@ export default function BillsPage() {
 				requestedPage,
 				PAGE_SIZE,
 				searchQuery,
+				getDateRange(),
 			);
 			const totalPages = Math.max(1, Math.ceil(result.total / PAGE_SIZE));
 			setTotal(result.total);
@@ -60,7 +128,7 @@ export default function BillsPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, [searchQuery]);
+	}, [getDateRange, searchQuery]);
 
 	useEffect(() => {
 		void Promise.resolve().then(() => loadBills(page));
@@ -79,8 +147,24 @@ export default function BillsPage() {
 					<Button variant='contained' startIcon={<AddOutlined />} href='/billing'>Create Bill</Button>
 				</Box>
 
-				<BillToolbar searchQuery={searchQuery} dateFilter={dateFilter} onSearchQueryChange={(value) => { setSearchQuery(value); setPage(1); }} onDateFilterChange={(value) => { setDateFilter(value); setPage(1); }} />
-				<BillList loading={loading} error={error} bills={bills} hasFilters={Boolean(searchQuery.trim())} onRetry={() => void loadBills(page)} onEdit={() => undefined} onDownloadPdf={() => undefined} onDelete={() => undefined} />
+				<BillToolbar
+					searchQuery={searchQuery}
+					dateFilter={dateFilter}
+					fromDate={fromDate}
+					toDate={toDate}
+					onSearchQueryChange={(value) => { setSearchQuery(value); setPage(1); }}
+					onDateFilterChange={(value) => { setDateFilter(value); setPage(1); }}
+					onFromDateChange={(value) => {
+						setFromDate(value);
+						if (toDate && value > toDate) setToDate(value);
+						setPage(1);
+					}}
+					onToDateChange={(value) => {
+						setToDate(fromDate && value < fromDate ? fromDate : value);
+						setPage(1);
+					}}
+				/>
+				<BillList loading={loading} error={error} bills={bills} hasFilters={Boolean(searchQuery.trim()) || dateFilter !== "all"} onRetry={() => void loadBills(page)} onEdit={() => undefined} onDownloadPdf={() => undefined} onDelete={() => undefined} />
 				<BillPagination page={page} totalPages={totalPages} onPageChange={setPage} />
 			</Stack>
 		</AppShell>

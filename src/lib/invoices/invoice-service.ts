@@ -13,10 +13,16 @@ interface PaginatedInvoices {
 	total: number;
 }
 
+export interface InvoiceDateRange {
+	from?: string;
+	to?: string;
+}
+
 export async function getInvoicesPaginated(
 	page: number,
 	pageSize: number,
 	searchQuery: string = "",
+	dateRange?: InvoiceDateRange,
 ): Promise<PaginatedInvoices> {
 	const supabase = createClient();
 	const from = (page - 1) * pageSize;
@@ -36,6 +42,14 @@ export async function getInvoicesPaginated(
 		query = query.or(
 			`customer_name.ilike.%${escapedSearch}%,invoice_number.ilike.%${escapedSearch}%`,
 		);
+	}
+
+	if (dateRange?.from) {
+		query = query.gte("created_at", dateRange.from);
+	}
+
+	if (dateRange?.to) {
+		query = query.lte("created_at", dateRange.to);
 	}
 
 	const { data, error, count } = await query
