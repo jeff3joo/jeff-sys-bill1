@@ -35,15 +35,12 @@ export default function Header() {
 			{/* User */}
 
 			<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-				<IconButton>
-					<NotificationsOutlined />
-				</IconButton>
 
-				<Avatar sx={{ width: 36, height: 36 }}>J</Avatar>
+				<Avatar sx={{ width: 36, height: 36 }}>S</Avatar>
 
 				<Box sx={{ display: { xs: "none", sm: "block" } }}>
 					<Typography variant='body2' sx={{ fontWeight: 600 }}>
-						Jeff
+						Saji Kumar
 					</Typography>
 
 					<Typography variant='caption' color='text.secondary'>

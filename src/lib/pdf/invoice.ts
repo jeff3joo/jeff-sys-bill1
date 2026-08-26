@@ -13,17 +13,17 @@ const invoiceLayout = {
 		},
 		address: {
 			x: 315,
-			y: 660
-		}
+			y: 660,
+		},
 	},
 
 	invoice: {
 		number: {
-			x: 475,
+			x: 480,
 			y: 700,
 		},
 		date: {
-			x: 475,
+			x: 480,
 			y: 685,
 		},
 	},
@@ -40,17 +40,10 @@ const invoiceLayout = {
 			qty: 273,
 			amount: 375,
 			tax: 435,
-			discount: 490,
-			total: 548,
+			discount: 500,
+			total: 558,
 		},
 	},
-
-	totals: {
-		x: 400,
-		startY: 190,
-		rowHeight: 18,
-	},
-
 	fontSize: 9,
 };
 
@@ -108,6 +101,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 
 	const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 	const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+	const italicFont = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
 	const { customer, invoice: invoiceLayoutData } = invoiceLayout;
 
 	const wrapText = (text: string, maxWidth: number, fontSize: number) => {
@@ -136,7 +130,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 		return lines.length > 0 ? lines : [""];
 	};
 
-	firstPage.drawText(invoice.customerName, {
+	firstPage.drawText(`Customer Name: ${invoice.customerName}`, {
 		x: customer.name.x,
 		y: customer.name.y,
 		size: invoiceLayout.fontSize,
@@ -145,7 +139,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 	});
 
 	if (invoice.customerPhone) {
-		firstPage.drawText(`Mobile: ${invoice.customerPhone}`, {
+		firstPage.drawText(`Mobile No: ${invoice.customerPhone}`, {
 			x: customer.phone.x,
 			y: customer.phone.y,
 			size: invoiceLayout.fontSize,
@@ -154,17 +148,8 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 		});
 	}
 
-	if (invoice.customerPhone) {
-		firstPage.drawText(`Mobile: ${invoice.customerPhone}`, {
-			x: customer.phone.x,
-			y: customer.phone.y,
-			size: invoiceLayout.fontSize,
-			font,
-			color: rgb(0, 0, 0),
-		});
-	}
-
-	firstPage.drawText(`Invoice: ${invoice.invoiceNumber}`, {
+	const invoiceNumberText = `Invoice: ${invoice.invoiceNumber}`;
+	firstPage.drawText(invoiceNumberText, {
 		x: invoiceLayoutData.number.x,
 		y: invoiceLayoutData.number.y,
 		size: invoiceLayout.fontSize,
@@ -172,20 +157,22 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 		color: rgb(0, 0, 0),
 	});
 
-	firstPage.drawText(
-		new Date(invoice.createdAt).toLocaleDateString("en-IN", {
+	const invoiceDateText = new Date(invoice.createdAt).toLocaleDateString(
+		"en-IN",
+		{
 			day: "2-digit",
 			month: "2-digit",
 			year: "numeric",
-		}),
-		{
-			x: invoiceLayoutData.date.x,
-			y: invoiceLayoutData.date.y,
-			size: invoiceLayout.fontSize,
-			font,
-			color: rgb(0, 0, 0),
 		},
 	);
+
+	firstPage.drawText(`Date :${invoiceDateText}`, {
+		x: invoiceLayoutData.date.x,
+		y: invoiceLayoutData.date.y,
+		size: invoiceLayout.fontSize,
+		font,
+		color: rgb(0, 0, 0),
+	});
 
 	const getItemRowHeight = (item: InvoicePdfData["items"][number]) => {
 		const lines = wrapText(item.name, invoiceLayout.items.nameMaxWidth, 8);
@@ -345,12 +332,21 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 	) => {
 		const y = invoiceLayout.items.startY + 18;
 
+		// Draw table header background bar (#383838)
+		page.drawRectangle({
+			x: 30,
+			y: y - 6,
+			width: 535,
+			height: 20,
+			color: rgb(56 / 255, 56 / 255, 56 / 255),
+		});
+
 		page.drawText("Item & Description", {
 			x: invoiceLayout.items.columns.name,
 			y,
 			size: 8,
 			font: boldFont,
-			color: rgb(0, 0, 0),
+			color: rgb(1, 1, 1),
 		});
 
 		page.drawText("Qty", {
@@ -358,7 +354,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			y,
 			size: 8,
 			font: boldFont,
-			color: rgb(0, 0, 0),
+			color: rgb(1, 1, 1),
 		});
 
 		const amountHeader = "Amount";
@@ -369,7 +365,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			y,
 			size: 8,
 			font: boldFont,
-			color: rgb(0, 0, 0),
+			color: rgb(1, 1, 1),
 		});
 
 		const taxHeader = "Tax";
@@ -380,7 +376,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			y,
 			size: 8,
 			font: boldFont,
-			color: rgb(0, 0, 0),
+			color: rgb(1, 1, 1),
 		});
 
 		const discountHeader = "Discount";
@@ -391,7 +387,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			y,
 			size: 8,
 			font: boldFont,
-			color: rgb(0, 0, 0),
+			color: rgb(1, 1, 1),
 		});
 
 		const totalHeader = "Total";
@@ -402,20 +398,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			y,
 			size: 8,
 			font: boldFont,
-			color: rgb(0, 0, 0),
-		});
-
-		page.drawLine({
-			start: {
-				x: 35,
-				y: y - 8,
-			},
-			end: {
-				x: 550,
-				y: y - 8,
-			},
-			thickness: 0.5,
-			color: rgb(0.5, 0.5, 0.5),
+			color: rgb(1, 1, 1),
 		});
 	};
 
@@ -441,7 +424,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 				maximumFractionDigits: 2,
 			});
 
-		const subtotalY = 240;
+		const subtotalY = 280;
 
 		page.drawLine({
 			start: {
@@ -449,7 +432,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 				y: subtotalY + 12,
 			},
 			end: {
-				x: 550,
+				x: 560,
 				y: subtotalY + 12,
 			},
 			thickness: 0.5,
@@ -516,26 +499,40 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			color: rgb(0, 0, 0),
 		});
 
-		const summaryLabelX = 390;
-		const summaryAmountX = 548;
+		page.drawLine({
+			start: {
+				x: 35,
+				y: subtotalY - 8,
+			},
+			end: {
+				x: 560,
+				y: subtotalY - 8,
+			},
+			thickness: 0.5,
+			color: rgb(0.5, 0.5, 0.5),
+		});
 
-		const taxableY = 220;
-		const cgstY = 200;
-		const sgstY = 180;
-		const totalY = 160;
+		const summaryLabelX = 390;
+		const summaryAmountX = 558;
+
+		const taxableY = 260;
+		const cgstY = 240;
+		const sgstY = 220;
+		const totalY = 200;
 
 		const drawSummaryRow = (
 			label: string,
 			value: number,
 			y: number,
 			fontToUse = font,
+			textcolor = rgb(0, 0, 0),
 		) => {
 			page.drawText(label, {
 				x: summaryLabelX,
 				y,
 				size: 8,
 				font: fontToUse,
-				color: rgb(0, 0, 0),
+				color: textcolor,
 			});
 
 			const formattedValue = formatAmount(value);
@@ -545,7 +542,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 				y,
 				size: 8,
 				font: fontToUse,
-				color: rgb(0, 0, 0),
+				color: textcolor,
 			});
 		};
 
@@ -553,20 +550,21 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 		drawSummaryRow("CGST @9%", cgst, cgstY);
 		drawSummaryRow("SGST @9%", sgst, sgstY);
 
-		page.drawLine({
-			start: {
-				x: 390,
-				y: 55,
-			},
-			end: {
-				x: 550,
-				y: 55,
-			},
-			thickness: 0.5,
-			color: rgb(0.5, 0.5, 0.5),
+		page.drawRectangle({
+			x: 30,
+			y: totalY - 6,
+			width: 535,
+			height: 20,
+			color: rgb(56 / 255, 56 / 255, 56 / 255),
 		});
 
-		drawSummaryRow("Total Amount", invoice.grandTotal, totalY, boldFont);
+		drawSummaryRow(
+			"Total Amount",
+			invoice.grandTotal,
+			totalY,
+			boldFont,
+			rgb(1, 1, 1),
+		);
 
 		const amountInWords = toWords.convert(invoice.grandTotal, {
 			currency: true,
@@ -576,15 +574,16 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 
 		page.drawText(amountInWordsText, {
 			x: 35,
-			y: 160,
-			size: 7,
-			font,
-			color: rgb(0, 0, 0),
+			y: 200,
+			size: 8,
+			font: boldFont,
+			color: rgb(1, 1, 1),
 		});
 	};
 
 	let currentItemIndex = 0;
 	let pageIndex = 0;
+	let totalsDrawn = false;
 
 	while (currentItemIndex < invoice.items.length) {
 		const normalPageItems = getPageItems(currentItemIndex, false);
@@ -614,7 +613,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			pdfDoc.addPage(copiedPage);
 			page = copiedPage;
 
-			page.drawText(`Invoice: ${invoice.invoiceNumber}`, {
+			page.drawText(invoiceNumberText, {
 				x: invoiceLayoutData.number.x,
 				y: invoiceLayoutData.number.y,
 				size: invoiceLayout.fontSize,
@@ -627,16 +626,55 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 
 		drawPageItems(page, pageItems, invoiceLayout.items.startY);
 
-		if (isFinalPage) {
-			drawTotals(page);
+		const lastItem = pageItems[pageItems.length - 1];
+		const nextItemIndex = lastItem.index + 1;
+		const hasMoreItems = nextItemIndex < invoice.items.length;
+
+		if (hasMoreItems) {
+			let itemsHeight = 0;
+			for (const pi of pageItems) {
+				itemsHeight += pi.height;
+			}
+			const afterItemsY = invoiceLayout.items.startY - itemsHeight;
+			const continuationY = Math.max(afterItemsY - 14, 250);
+
+			const continuationText = "Continued on next page...";
+			const textWidth = italicFont.widthOfTextAtSize(continuationText, 8);
+
+			page.drawText(continuationText, {
+				x: 550 - textWidth,
+				y: continuationY,
+				size: 8,
+				font: italicFont,
+				color: rgb(0.45, 0.45, 0.45),
+			});
+
+			page.drawLine({
+				start: {
+					x: 35,
+					y: 190,
+				},
+				end: {
+					x: 560,
+					y: 190,
+				},
+				thickness: 0.5,
+				color: rgb(0.5, 0.5, 0.5),
+			});
 		}
 
-		const lastItem = pageItems[pageItems.length - 1];
-		currentItemIndex = lastItem.index + 1;
+		if (isFinalPage) {
+			drawTotals(page);
+			totalsDrawn = true;
+		}
+
+		currentItemIndex = nextItemIndex;
 		pageIndex++;
 	}
 
-	drawTotals(pdfDoc.getPages()[pdfDoc.getPageCount() - 1]);
+	if (!totalsDrawn) {
+		drawTotals(pdfDoc.getPages()[pdfDoc.getPageCount() - 1]);
+	}
 
 	const pdfBytes = await pdfDoc.save();
 	return pdfBytes;
