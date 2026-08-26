@@ -13,8 +13,8 @@ import {
 	Typography,
 } from "@mui/material";
 import { AddOutlined } from "@mui/icons-material";
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/layout/app-shell";
 import BillList from "@/components/bills/bill-list";
 import { type Bill } from "@/components/bills/bill-item";
@@ -33,13 +33,38 @@ import type { InvoicePreviewData, PaymentStatus } from "@/types/billing";
 import { deleteInvoice } from "@/app/billing/actions";
 
 const PAGE_SIZE = 10;
+const VALID_PAYMENT_STATUSES: PaymentStatus[] = [
+	"not_paid",
+	"partially_paid",
+	"fully_paid",
+];
 
-export default function BillsPage() {
+function parseStatusParams(statusParam: string | null): PaymentStatus[] {
+	if (!statusParam) {
+		return [];
+	}
+
+	return statusParam
+		.split(",")
+		.map((s) => s.trim())
+		.filter((s): s is PaymentStatus =>
+			VALID_PAYMENT_STATUSES.includes(s as PaymentStatus),
+		);
+}
+
+function BillsContent() {
+	const searchParams = useSearchParams();
+	const router = useRouter();
+
+	const currentStatusParam = searchParams.get("status");
+	const [prevStatusParam, setPrevStatusParam] = useState(currentStatusParam);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [dateFilter, setDateFilter] = useState<BillDateFilter>("all");
 	const [fromDate, setFromDate] = useState("");
 	const [toDate, setToDate] = useState("");
-	const [paymentStatuses, setPaymentStatuses] = useState<PaymentStatus[]>([]);
+	const [paymentStatuses, setPaymentStatuses] = useState<PaymentStatus[]>(() =>
+		parseStatusParams(currentStatusParam),
+	);
 	const [bills, setBills] = useState<Bill[]>([]);
 	const [total, setTotal] = useState(0);
 	const [loading, setLoading] = useState(true);
@@ -52,7 +77,13 @@ export default function BillsPage() {
 	const [deletingBill, setDeletingBill] = useState<Bill | null>(null);
 	const [deleteError, setDeleteError] = useState("");
 	const [deleteLoading, setDeleteLoading] = useState(false);
-	const router = useRouter();
+	const billsRequestRef = useRef(0);
+
+	if (currentStatusParam !== prevStatusParam) {
+		setPrevStatusParam(currentStatusParam);
+		setPaymentStatuses(parseStatusParams(currentStatusParam));
+		setPage(1);
+	}
 
 	const getLocalDayStart = (date: Date) => {
 		const start = new Date(date);
@@ -118,7 +149,7 @@ export default function BillsPage() {
 
 	const loadBills = useCallback(
 		async (requestedPage: number) => {
-			await Promise.resolve();
+			const requestId = ++billsRequestRef.current;
 			setLoading(true);
 			setError(false);
 
@@ -130,6 +161,11 @@ export default function BillsPage() {
 					getDateRange(),
 					paymentStatuses,
 				);
+
+				if (billsRequestRef.current !== requestId) {
+					return;
+				}
+
 				const totalPages = Math.max(1, Math.ceil(result.total / PAGE_SIZE));
 				setTotal(result.total);
 
@@ -159,10 +195,15 @@ export default function BillsPage() {
 					})),
 				);
 			} catch (fetchError) {
+				if (billsRequestRef.current !== requestId) {
+					return;
+				}
 				console.error("Failed to load invoices:", fetchError);
 				setError(true);
 			} finally {
-				setLoading(false);
+				if (billsRequestRef.current === requestId) {
+					setLoading(false);
+				}
 			}
 		},
 		[getDateRange, searchQuery, paymentStatuses],
@@ -396,5 +437,13 @@ export default function BillsPage() {
 				</DialogActions>
 			</Dialog>
 		</AppShell>
+	);
+}
+
+export default function BillsPage() {
+	return (
+		<Suspense fallback={null}>
+			<BillsContent />
+		</Suspense>
 	);
 }

@@ -86,3 +86,11 @@ export type InvoicePreviewData = {
 		tax: number;
 	}[];
 };
+
+export type PaymentTransaction = {
+	id: string;
+	invoiceId: string;
+	amount: number;
+	createdAt: string;
+};
+
