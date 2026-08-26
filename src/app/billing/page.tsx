@@ -10,7 +10,11 @@ import {
 	DialogContent,
 	DialogTitle,
 	Divider,
+	FormControl,
 	IconButton,
+	InputLabel,
+	MenuItem,
+	Select,
 	Stack,
 	TextField,
 	Typography,
@@ -38,6 +42,7 @@ import type {
 	BillItem,
 	InvoicePayload,
 	InvoicePreviewData,
+	PaymentStatus,
 } from "@/types/billing";
 import ProductForm from "@/components/products/product-form";
 
@@ -49,7 +54,10 @@ export default function BillingPage() {
 	const [customerPhone, setCustomerPhone] = useState("");
 	const [customerEmail, setCustomerEmail] = useState("");
 	const [customerAddress, setCustomerAddress] = useState("");
+	const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("not_paid");
+	const [amountReceived, setAmountReceived] = useState(0);
 	const [customerNameError, setCustomerNameError] = useState("");
+	const [paymentError, setPaymentError] = useState("");
 	const [newItemModalOpen, setNewItemModalOpen] = useState(false);
 
 	const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -68,6 +76,16 @@ export default function BillingPage() {
 	const subtotal = getSubtotal(billItems);
 	const grandTotal = getGrandTotal(billItems);
 	const totalDiscount = getTotalDiscount(billItems);
+	const normalizedAmountReceived =
+		paymentStatus === "fully_paid"
+			? grandTotal
+			: paymentStatus === "not_paid"
+				? 0
+				: Math.min(Math.max(amountReceived, 0), grandTotal);
+	const amountPending = Math.max(grandTotal - normalizedAmountReceived, 0);
+	const paymentAmountValue = Number.isFinite(amountReceived)
+		? amountReceived
+		: 0;
 
 	const invoicePayload: InvoicePayload = {
 		customerName: customerName.trim(),
@@ -77,6 +95,9 @@ export default function BillingPage() {
 		subtotal,
 		discount: totalDiscount,
 		total: grandTotal,
+		paymentStatus,
+		amountReceived: normalizedAmountReceived,
+		amountPending,
 		items: billItems,
 	};
 
@@ -97,6 +118,29 @@ export default function BillingPage() {
 
 		loadProducts();
 	}, []);
+
+	useEffect(() => {
+		if (paymentStatus === "not_paid") {
+			setAmountReceived(0);
+			setPaymentError("");
+			return;
+		}
+
+		if (paymentStatus === "fully_paid") {
+			setAmountReceived(grandTotal);
+			setPaymentError("");
+			return;
+		}
+
+		if (amountReceived <= 0 || amountReceived >= grandTotal) {
+			setPaymentError(
+				"Amount received must be greater than 0 and less than the total bill.",
+			);
+			return;
+		}
+
+		setPaymentError("");
+	}, [amountReceived, grandTotal, paymentStatus]);
 
 	useEffect(() => {
 		const invoiceId = new URLSearchParams(window.location.search).get(
@@ -127,6 +171,8 @@ export default function BillingPage() {
 				setCustomerPhone(invoice.customer_phone);
 				setCustomerEmail(invoice.customer_email);
 				setCustomerAddress(invoice.customer_address);
+				setPaymentStatus(invoice.payment_status);
+				setAmountReceived(invoice.amount_received);
 				setBillItems(
 					items.map((item) => ({
 						lineItemId: item.id,
@@ -166,6 +212,43 @@ export default function BillingPage() {
 
 		setCustomerNameError("");
 		return true;
+	};
+
+	const validatePaymentDetails = () => {
+		if (paymentStatus === "partially_paid") {
+			if (
+				!Number.isFinite(amountReceived) ||
+				amountReceived <= 0 ||
+				amountReceived >= grandTotal
+			) {
+				setPaymentError(
+					"Amount received must be greater than 0 and less than the total bill.",
+				);
+				return false;
+			}
+		}
+
+		setPaymentError("");
+		return true;
+	};
+
+	const handlePaymentStatusChange = (nextStatus: PaymentStatus) => {
+		setPaymentStatus(nextStatus);
+		setPaymentError("");
+
+		if (nextStatus === "not_paid") {
+			setAmountReceived(0);
+			return;
+		}
+
+		if (nextStatus === "fully_paid") {
+			setAmountReceived(grandTotal);
+			return;
+		}
+
+		if (amountReceived <= 0) {
+			setAmountReceived(0);
+		}
 	};
 
 	const handleDownloadPdf = async () => {
@@ -296,7 +379,11 @@ export default function BillingPage() {
 	};
 
 	const handleGenerateBill = async () => {
-		if (!validateCustomerDetails() || billItems.length === 0) {
+		if (
+			!validateCustomerDetails() ||
+			!validatePaymentDetails() ||
+			billItems.length === 0
+		) {
 			return;
 		}
 
@@ -313,7 +400,7 @@ export default function BillingPage() {
 					quantity: item.quantity,
 				})),
 			);
-			
+
 			const invoiceItems = billItems.map((item) => ({
 				lineItemId: item.lineItemId,
 				productId: item.productId,
@@ -339,6 +426,9 @@ export default function BillingPage() {
 				discountTotal: totalDiscount,
 				taxTotal,
 				grandTotal,
+				paymentStatus,
+				amountReceived: normalizedAmountReceived,
+				amountPending,
 			};
 			const invoice = editingInvoiceId
 				? await updateInvoiceWithItems(
@@ -362,6 +452,9 @@ export default function BillingPage() {
 				discountTotal: totalDiscount,
 				taxTotal,
 				grandTotal,
+				paymentStatus,
+				amountReceived: normalizedAmountReceived,
+				amountPending,
 
 				items: invoiceItems,
 			};
@@ -388,6 +481,8 @@ export default function BillingPage() {
 		setCustomerPhone("");
 		setCustomerEmail("");
 		setCustomerAddress("");
+		setPaymentStatus("not_paid");
+		setAmountReceived(0);
 
 		setBillItems([]);
 
@@ -998,6 +1093,92 @@ export default function BillingPage() {
 									</Stack>
 
 									<Divider />
+
+									<Stack spacing={2}>
+										<Typography variant='h6' sx={{ fontWeight: 700 }}>
+											Payment Status
+										</Typography>
+
+										<FormControl fullWidth size='small'>
+											<InputLabel id='payment-status-label'>
+												Payment Status
+											</InputLabel>
+											<Select
+												labelId='payment-status-label'
+												value={paymentStatus}
+												label='Payment Status'
+												onChange={(event) =>
+													handlePaymentStatusChange(
+														event.target.value as PaymentStatus,
+													)
+												}
+											>
+												<MenuItem value='not_paid'>Not Paid</MenuItem>
+												<MenuItem value='partially_paid'>
+													Partially Paid
+												</MenuItem>
+												<MenuItem value='fully_paid'>Fully Paid</MenuItem>
+											</Select>
+										</FormControl>
+
+										{paymentStatus === "partially_paid" && (
+											<TextField
+												fullWidth
+												size='small'
+												type='number'
+												label='Amount Received'
+												value={paymentAmountValue}
+												onChange={(event) => {
+													const nextValue = Number(event.target.value);
+													setAmountReceived(
+														Number.isFinite(nextValue)
+															? Math.max(nextValue, 0)
+															: 0,
+													);
+													setPaymentError("");
+												}}
+												error={Boolean(paymentError)}
+												helperText={
+													paymentError || "Enter the amount already received."
+												}
+												slotProps={{
+													htmlInput: { min: 0, step: "0.01" },
+												}}
+											/>
+										)}
+
+										<Stack
+											direction='row'
+											sx={{ justifyContent: "space-between" }}
+										>
+											<Typography color='text.secondary'>
+												Amount Received
+											</Typography>
+											<Typography>
+												₹
+												{normalizedAmountReceived.toLocaleString("en-IN", {
+													minimumFractionDigits: 2,
+													maximumFractionDigits: 2,
+												})}
+											</Typography>
+										</Stack>
+
+										<Stack
+											direction='row'
+											sx={{ justifyContent: "space-between" }}
+										>
+											<Typography color='text.secondary'>
+												Amount Pending
+											</Typography>
+											<Typography>
+												₹
+												{amountPending.toLocaleString("en-IN", {
+													minimumFractionDigits: 2,
+													maximumFractionDigits: 2,
+												})}
+											</Typography>
+										</Stack>
+									</Stack>
 
 									<Stack
 										direction='row'

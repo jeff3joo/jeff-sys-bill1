@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { getTaxAmount } from "@/lib/calculations/billing";
-import type { BillItem } from "@/types/billing";
+import type { BillItem, PaymentStatus } from "@/types/billing";
 
 export interface InvoiceSummary {
 	id: string;
@@ -8,6 +8,9 @@ export interface InvoiceSummary {
 	customer_name: string;
 	created_at: string;
 	grand_total: number;
+	payment_status: PaymentStatus;
+	amount_received: number;
+	amount_pending: number;
 }
 
 interface PaginatedInvoices {
@@ -27,6 +30,9 @@ export interface InvoiceDetails extends InvoiceSummary {
 	subtotal: number;
 	discount_total: number;
 	tax_total: number;
+	payment_status: "not_paid" | "partially_paid" | "fully_paid";
+	amount_received: number;
+	amount_pending: number;
 }
 
 export interface InvoiceItemDetails {
@@ -53,6 +59,7 @@ export async function getInvoicesPaginated(
 	pageSize: number,
 	searchQuery: string = "",
 	dateRange?: InvoiceDateRange,
+	paymentStatuses?: PaymentStatus[],
 ): Promise<PaginatedInvoices> {
 	const supabase = createClient();
 	const from = (page - 1) * pageSize;
@@ -62,7 +69,7 @@ export async function getInvoicesPaginated(
 	let query = supabase
 		.from("invoices")
 		.select(
-			"id, invoice_number, customer_name, created_at, grand_total",
+			"id, invoice_number, customer_name, created_at, grand_total, payment_status, amount_received, amount_pending",
 			{ count: "exact" },
 		);
 
@@ -80,6 +87,10 @@ export async function getInvoicesPaginated(
 
 	if (dateRange?.to) {
 		query = query.lte("created_at", dateRange.to);
+	}
+
+	if (paymentStatuses && paymentStatuses.length > 0) {
+		query = query.in("payment_status", paymentStatuses);
 	}
 
 	const { data, error, count } = await query
@@ -103,7 +114,7 @@ export async function getInvoiceWithItems(
 	const { data: invoice, error: invoiceError } = await supabase
 		.from("invoices")
 		.select(
-			"id, invoice_number, customer_name, customer_phone, customer_email, customer_address, created_at, subtotal, discount_total, tax_total, grand_total",
+			"id, invoice_number, customer_name, customer_phone, customer_email, customer_address, created_at, subtotal, discount_total, tax_total, grand_total, payment_status, amount_received, amount_pending",
 		)
 		.eq("id", invoiceId)
 		.single();

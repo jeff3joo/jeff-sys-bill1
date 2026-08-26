@@ -19,7 +19,9 @@ import AppShell from "@/components/layout/app-shell";
 import BillList from "@/components/bills/bill-list";
 import { type Bill } from "@/components/bills/bill-item";
 import BillPagination from "@/components/bills/bill-pagination";
-import BillToolbar, { type BillDateFilter } from "@/components/bills/bill-toolbar";
+import BillToolbar, {
+	type BillDateFilter,
+} from "@/components/bills/bill-toolbar";
 import {
 	getInvoicesPaginated,
 	getInvoiceWithItems,
@@ -27,7 +29,7 @@ import {
 } from "@/lib/invoices/invoice-service";
 import { createInvoicePdf } from "@/lib/pdf/invoice";
 import { getDiscountAmount } from "@/lib/calculations/billing";
-import type { InvoicePreviewData } from "@/types/billing";
+import type { InvoicePreviewData, PaymentStatus } from "@/types/billing";
 import { deleteInvoice } from "@/app/billing/actions";
 
 const PAGE_SIZE = 10;
@@ -37,12 +39,15 @@ export default function BillsPage() {
 	const [dateFilter, setDateFilter] = useState<BillDateFilter>("all");
 	const [fromDate, setFromDate] = useState("");
 	const [toDate, setToDate] = useState("");
+	const [paymentStatuses, setPaymentStatuses] = useState<PaymentStatus[]>([]);
 	const [bills, setBills] = useState<Bill[]>([]);
 	const [total, setTotal] = useState(0);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(false);
 	const [page, setPage] = useState(1);
-	const [downloadingBillId, setDownloadingBillId] = useState<string | null>(null);
+	const [downloadingBillId, setDownloadingBillId] = useState<string | null>(
+		null,
+	);
 	const [actionError, setActionError] = useState("");
 	const [deletingBill, setDeletingBill] = useState<Bill | null>(null);
 	const [deleteError, setDeleteError] = useState("");
@@ -111,47 +116,57 @@ export default function BillsPage() {
 		return undefined;
 	}, [dateFilter, fromDate, toDate]);
 
-	const loadBills = useCallback(async (requestedPage: number) => {
-		await Promise.resolve();
-		setLoading(true);
-		setError(false);
+	const loadBills = useCallback(
+		async (requestedPage: number) => {
+			await Promise.resolve();
+			setLoading(true);
+			setError(false);
 
-		try {
-			const result = await getInvoicesPaginated(
-				requestedPage,
-				PAGE_SIZE,
-				searchQuery,
-				getDateRange(),
-			);
-			const totalPages = Math.max(1, Math.ceil(result.total / PAGE_SIZE));
-			setTotal(result.total);
+			try {
+				const result = await getInvoicesPaginated(
+					requestedPage,
+					PAGE_SIZE,
+					searchQuery,
+					getDateRange(),
+					paymentStatuses,
+				);
+				const totalPages = Math.max(1, Math.ceil(result.total / PAGE_SIZE));
+				setTotal(result.total);
 
-			if (requestedPage > totalPages) {
-				setBills([]);
-				setPage(totalPages);
-				return;
+				if (requestedPage > totalPages) {
+					setBills([]);
+					setPage(totalPages);
+					return;
+				}
+
+				setBills(
+					result.invoices.map((invoice) => ({
+						id: invoice.id,
+						invoiceNumber: invoice.invoice_number,
+						customerName: invoice.customer_name,
+						invoiceDate: new Date(invoice.created_at).toLocaleDateString(
+							"en-IN",
+							{
+								day: "numeric",
+								month: "short",
+								year: "numeric",
+							},
+						),
+						grandTotal: invoice.grand_total,
+						paymentStatus: invoice.payment_status,
+						amountReceived: invoice.amount_received,
+						amountPending: invoice.amount_pending,
+					})),
+				);
+			} catch (fetchError) {
+				console.error("Failed to load invoices:", fetchError);
+				setError(true);
+			} finally {
+				setLoading(false);
 			}
-
-			setBills(
-				result.invoices.map((invoice) => ({
-					id: invoice.id,
-					invoiceNumber: invoice.invoice_number,
-					customerName: invoice.customer_name,
-					invoiceDate: new Date(invoice.created_at).toLocaleDateString("en-IN", {
-						day: "numeric",
-						month: "short",
-						year: "numeric",
-					}),
-					grandTotal: invoice.grand_total,
-				})),
-			);
-		} catch (fetchError) {
-			console.error("Failed to load invoices:", fetchError);
-			setError(true);
-		} finally {
-			setLoading(false);
-		}
-	}, [getDateRange, searchQuery]);
+		},
+		[getDateRange, searchQuery, paymentStatuses],
+	);
 
 	useEffect(() => {
 		void Promise.resolve().then(() => loadBills(page));
@@ -183,7 +198,7 @@ export default function BillsPage() {
 				mrp: item.mrp,
 				sellingPrice: item.selling_price,
 				discount: getDiscountAmount({
-						lineItemId: item.product_id,
+					lineItemId: item.product_id,
 					productId: item.product_id,
 					name: item.name,
 					type: item.type,
@@ -207,10 +222,15 @@ export default function BillsPage() {
 				discountTotal: invoice.discount_total,
 				taxTotal: invoice.tax_total,
 				grandTotal: invoice.grand_total,
+				paymentStatus: invoice.payment_status,
+				amountReceived: invoice.amount_received,
+				amountPending: invoice.amount_pending,
 				items: pdfItems,
 			};
 			const pdfBytes = await createInvoicePdf(pdfData);
-			const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
+			const blob = new Blob([new Uint8Array(pdfBytes)], {
+				type: "application/pdf",
+			});
 			const url = URL.createObjectURL(blob);
 			const link = document.createElement("a");
 			link.href = url;
@@ -256,12 +276,30 @@ export default function BillsPage() {
 		<AppShell>
 			<Stack spacing={4}>
 				{actionError && <Alert severity='error'>{actionError}</Alert>}
-				<Box sx={{ display: "flex", alignItems: { xs: "flex-start", sm: "center" }, justifyContent: "space-between", gap: 2, flexDirection: { xs: "column", sm: "row" } }}>
+				<Box
+					sx={{
+						display: "flex",
+						alignItems: { xs: "flex-start", sm: "center" },
+						justifyContent: "space-between",
+						gap: 2,
+						flexDirection: { xs: "column", sm: "row" },
+					}}
+				>
 					<Box>
-						<Typography variant='h4' sx={{ fontWeight: 700 }}>Bills</Typography>
-						<Typography color='text.secondary' sx={{ mt: 1 }}>View and manage your generated bills.</Typography>
+						<Typography variant='h4' sx={{ fontWeight: 700 }}>
+							Bills
+						</Typography>
+						<Typography color='text.secondary' sx={{ mt: 1 }}>
+							View and manage your generated bills.
+						</Typography>
 					</Box>
-					<Button variant='contained' startIcon={<AddOutlined />} href='/billing'>Create Bill</Button>
+					<Button
+						variant='contained'
+						startIcon={<AddOutlined />}
+						href='/billing'
+					>
+						Create Bill
+					</Button>
 				</Box>
 
 				<BillToolbar
@@ -269,8 +307,15 @@ export default function BillsPage() {
 					dateFilter={dateFilter}
 					fromDate={fromDate}
 					toDate={toDate}
-					onSearchQueryChange={(value) => { setSearchQuery(value); setPage(1); }}
-					onDateFilterChange={(value) => { setDateFilter(value); setPage(1); }}
+					paymentStatuses={paymentStatuses}
+					onSearchQueryChange={(value) => {
+						setSearchQuery(value);
+						setPage(1);
+					}}
+					onDateFilterChange={(value) => {
+						setDateFilter(value);
+						setPage(1);
+					}}
 					onFromDateChange={(value) => {
 						setFromDate(value);
 						if (toDate && value > toDate) setToDate(value);
@@ -280,9 +325,36 @@ export default function BillsPage() {
 						setToDate(fromDate && value < fromDate ? fromDate : value);
 						setPage(1);
 					}}
+					onPaymentStatusesChange={(statuses) => {
+						setPaymentStatuses(statuses);
+						setPage(1);
+					}}
 				/>
-				<BillList loading={loading} error={error} bills={bills} hasFilters={Boolean(searchQuery.trim()) || dateFilter !== "all"} downloadingBillId={downloadingBillId} deletingBillId={deletingBill?.id ?? null} onRetry={() => void loadBills(page)} onEdit={handleEdit} onDownloadPdf={handleDownloadPdf} onDelete={(bill) => { setDeleteError(""); setDeletingBill(bill); }} />
-				<BillPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+				<BillList
+					loading={loading}
+					error={error}
+					bills={bills}
+					hasFilters={
+						Boolean(searchQuery.trim()) ||
+						dateFilter !== "all" ||
+						paymentStatuses.length > 0
+					}
+					downloadingBillId={downloadingBillId}
+					deletingBillId={deletingBill?.id ?? null}
+					onRetry={() => void loadBills(page)}
+					onEdit={handleEdit}
+					onDownloadPdf={handleDownloadPdf}
+					onDelete={(bill) => {
+						setDeleteError("");
+						setDeletingBill(bill);
+					}}
+					onPaymentUpdated={() => void loadBills(page)}
+				/>
+				<BillPagination
+					page={page}
+					totalPages={totalPages}
+					onPageChange={setPage}
+				/>
 			</Stack>
 			<Dialog
 				open={deletingBill !== null}
@@ -300,11 +372,25 @@ export default function BillsPage() {
 					<DialogContentText>
 						This bill and its invoice items will be permanently deleted.
 					</DialogContentText>
-					{deleteError && <Typography color='error' sx={{ mt: 2 }}>{deleteError}</Typography>}
+					{deleteError && (
+						<Typography color='error' sx={{ mt: 2 }}>
+							{deleteError}
+						</Typography>
+					)}
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={() => setDeletingBill(null)} disabled={deleteLoading}>Cancel</Button>
-					<Button onClick={() => void handleDelete()} color='error' variant='contained' disabled={deleteLoading}>
+					<Button
+						onClick={() => setDeletingBill(null)}
+						disabled={deleteLoading}
+					>
+						Cancel
+					</Button>
+					<Button
+						onClick={() => void handleDelete()}
+						color='error'
+						variant='contained'
+						disabled={deleteLoading}
+					>
 						{deleteLoading ? "Deleting..." : "Delete"}
 					</Button>
 				</DialogActions>

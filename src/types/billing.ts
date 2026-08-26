@@ -1,3 +1,5 @@
+export type PaymentStatus = "not_paid" | "partially_paid" | "fully_paid";
+
 export type BillItem = {
 	lineItemId: string;
 	productId: string;
@@ -17,6 +19,9 @@ export type InvoicePayload = {
 	subtotal: number;
 	discount: number;
 	total: number;
+	paymentStatus: PaymentStatus;
+	amountReceived: number;
+	amountPending: number;
 	items: BillItem[];
 };
 
@@ -29,6 +34,9 @@ export type CreateInvoiceInput = {
 	discountTotal: number;
 	taxTotal: number;
 	grandTotal: number;
+	paymentStatus: PaymentStatus;
+	amountReceived: number;
+	amountPending: number;
 	invoiceId?: string | null;
 };
 
@@ -59,6 +67,9 @@ export type InvoicePreviewData = {
 	discountTotal: number;
 	taxTotal: number;
 	grandTotal: number;
+	paymentStatus: PaymentStatus;
+	amountReceived: number;
+	amountPending: number;
 
 	items: {
 		lineItemId: string;

@@ -31,6 +31,9 @@ export async function createInvoiceWithItems(
 		p_discount_total: input.discountTotal,
 		p_tax_total: input.taxTotal,
 		p_grand_total: input.grandTotal,
+		p_payment_status: input.paymentStatus,
+		p_amount_received: input.amountReceived,
+		p_amount_pending: input.amountPending,
 		p_items: items,
 		p_invoice_id: input.invoiceId ?? null,
 	});
@@ -57,6 +60,9 @@ export async function updateInvoiceWithItems(
 		p_discount_total: input.discountTotal,
 		p_tax_total: input.taxTotal,
 		p_grand_total: input.grandTotal,
+		p_payment_status: input.paymentStatus,
+		p_amount_received: input.amountReceived,
+		p_amount_pending: input.amountPending,
 		p_items: items,
 		p_invoice_id: invoiceId,
 	});
