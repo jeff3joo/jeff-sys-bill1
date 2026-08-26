@@ -40,7 +40,6 @@ import { getProducts } from "@/lib/products/product-service";
 import { getInvoiceWithItems } from "@/lib/invoices/invoice-service";
 import type {
 	BillItem,
-	InvoicePayload,
 	InvoicePreviewData,
 	PaymentStatus,
 } from "@/types/billing";
@@ -55,12 +54,11 @@ export default function BillingPage() {
 	const [customerEmail, setCustomerEmail] = useState("");
 	const [customerAddress, setCustomerAddress] = useState("");
 	const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("not_paid");
-	const [amountReceived, setAmountReceived] = useState(0);
+	const [amountReceived, setAmountReceived] = useState("");
 	const [customerNameError, setCustomerNameError] = useState("");
 	const [paymentError, setPaymentError] = useState("");
 	const [newItemModalOpen, setNewItemModalOpen] = useState(false);
 
-	const [isPreviewMode, setIsPreviewMode] = useState(false);
 	const [invoicePreview, setInvoicePreview] =
 		useState<InvoicePreviewData | null>(null);
 
@@ -76,30 +74,18 @@ export default function BillingPage() {
 	const subtotal = getSubtotal(billItems);
 	const grandTotal = getGrandTotal(billItems);
 	const totalDiscount = getTotalDiscount(billItems);
+	const parsedAmountReceived =
+		amountReceived === "" ? 0 : Number(amountReceived);
+	const numericAmountReceived = Number.isFinite(parsedAmountReceived)
+		? Math.max(parsedAmountReceived, 0)
+		: 0;
 	const normalizedAmountReceived =
 		paymentStatus === "fully_paid"
 			? grandTotal
 			: paymentStatus === "not_paid"
 				? 0
-				: Math.min(Math.max(amountReceived, 0), grandTotal);
+				: Math.min(numericAmountReceived, grandTotal);
 	const amountPending = Math.max(grandTotal - normalizedAmountReceived, 0);
-	const paymentAmountValue = Number.isFinite(amountReceived)
-		? amountReceived
-		: 0;
-
-	const invoicePayload: InvoicePayload = {
-		customerName: customerName.trim(),
-		customerPhone: customerPhone.trim(),
-		customerEmail: customerEmail.trim(),
-		customerAddress: customerAddress.trim(),
-		subtotal,
-		discount: totalDiscount,
-		total: grandTotal,
-		paymentStatus,
-		amountReceived: normalizedAmountReceived,
-		amountPending,
-		items: billItems,
-	};
 
 	useEffect(() => {
 		const loadProducts = async () => {
@@ -118,29 +104,6 @@ export default function BillingPage() {
 
 		loadProducts();
 	}, []);
-
-	useEffect(() => {
-		if (paymentStatus === "not_paid") {
-			setAmountReceived(0);
-			setPaymentError("");
-			return;
-		}
-
-		if (paymentStatus === "fully_paid") {
-			setAmountReceived(grandTotal);
-			setPaymentError("");
-			return;
-		}
-
-		if (amountReceived <= 0 || amountReceived >= grandTotal) {
-			setPaymentError(
-				"Amount received must be greater than 0 and less than the total bill.",
-			);
-			return;
-		}
-
-		setPaymentError("");
-	}, [amountReceived, grandTotal, paymentStatus]);
 
 	useEffect(() => {
 		const invoiceId = new URLSearchParams(window.location.search).get(
@@ -172,7 +135,9 @@ export default function BillingPage() {
 				setCustomerEmail(invoice.customer_email);
 				setCustomerAddress(invoice.customer_address);
 				setPaymentStatus(invoice.payment_status);
-				setAmountReceived(invoice.amount_received);
+				setAmountReceived(
+					invoice.amount_received > 0 ? String(invoice.amount_received) : "",
+				);
 				setBillItems(
 					items.map((item) => ({
 						lineItemId: item.id,
@@ -216,10 +181,12 @@ export default function BillingPage() {
 
 	const validatePaymentDetails = () => {
 		if (paymentStatus === "partially_paid") {
+			const parsed = Number(amountReceived);
 			if (
-				!Number.isFinite(amountReceived) ||
-				amountReceived <= 0 ||
-				amountReceived >= grandTotal
+				amountReceived.trim() === "" ||
+				!Number.isFinite(parsed) ||
+				parsed <= 0 ||
+				parsed >= grandTotal
 			) {
 				setPaymentError(
 					"Amount received must be greater than 0 and less than the total bill.",
@@ -237,17 +204,25 @@ export default function BillingPage() {
 		setPaymentError("");
 
 		if (nextStatus === "not_paid") {
-			setAmountReceived(0);
+			setAmountReceived("");
 			return;
 		}
 
 		if (nextStatus === "fully_paid") {
-			setAmountReceived(grandTotal);
+			setAmountReceived(String(grandTotal));
 			return;
 		}
 
-		if (amountReceived <= 0) {
-			setAmountReceived(0);
+		if (nextStatus === "partially_paid") {
+			const parsed = Number(amountReceived);
+			if (
+				amountReceived === "" ||
+				!Number.isFinite(parsed) ||
+				parsed <= 0 ||
+				parsed >= grandTotal
+			) {
+				setAmountReceived("");
+			}
 		}
 	};
 
@@ -482,7 +457,7 @@ export default function BillingPage() {
 		setCustomerEmail("");
 		setCustomerAddress("");
 		setPaymentStatus("not_paid");
-		setAmountReceived(0);
+		setAmountReceived("");
 
 		setBillItems([]);
 
@@ -574,7 +549,7 @@ export default function BillingPage() {
 										</Typography>
 
 										<Typography variant='body2' color='text.secondary'>
-											Enter the customer's information.
+											Enter the customer&apos;s information.
 										</Typography>
 									</Box>
 
@@ -1125,25 +1100,24 @@ export default function BillingPage() {
 											<TextField
 												fullWidth
 												size='small'
-												type='number'
+												type='text'
+												inputMode='decimal'
 												label='Amount Received'
-												value={paymentAmountValue}
+												placeholder='0.00'
+												value={amountReceived}
 												onChange={(event) => {
-													const nextValue = Number(event.target.value);
-													setAmountReceived(
-														Number.isFinite(nextValue)
-															? Math.max(nextValue, 0)
-															: 0,
-													);
-													setPaymentError("");
+													const value = event.target.value;
+													if (value === "" || /^\d*\.?\d*$/.test(value)) {
+														setAmountReceived(value);
+														if (paymentError) {
+															setPaymentError("");
+														}
+													}
 												}}
 												error={Boolean(paymentError)}
 												helperText={
 													paymentError || "Enter the amount already received."
 												}
-												slotProps={{
-													htmlInput: { min: 0, step: "0.01" },
-												}}
 											/>
 										)}
 
