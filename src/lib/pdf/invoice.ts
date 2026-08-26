@@ -4,50 +4,50 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 const invoiceLayout = {
 	customer: {
 		name: {
-			x: 55,
-			y: 620,
+			x: 35,
+			y: 660,
 		},
 		phone: {
-			x: 55,
-			y: 605,
+			x: 35,
+			y: 645,
 		},
 		address: {
 			x: 315,
-			y: 620
+			y: 660
 		}
 	},
 
 	invoice: {
 		number: {
 			x: 475,
-			y: 660,
+			y: 700,
 		},
 		date: {
 			x: 475,
-			y: 645,
+			y: 685,
 		},
 	},
 
 	items: {
-		startY: 580,
+		startY: 600,
 		minRowHeight: 24,
-		endY: 190,
+		endY: 250,
 		nameMaxWidth: 180,
 		totalsHeight: 120,
 
 		columns: {
-			name: 55,
+			name: 35,
 			qty: 273,
-			amount: 315,
-			tax: 395,
-			discount: 440,
-			total: 493,
+			amount: 375,
+			tax: 435,
+			discount: 490,
+			total: 548,
 		},
 	},
 
 	totals: {
 		x: 400,
-		startY: 150,
+		startY: 190,
 		rowHeight: 18,
 	},
 
@@ -262,61 +262,65 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 				? (item.mrp / 1.18) * item.quantity
 				: item.sellingPrice * item.quantity;
 
-		page.drawText(
-			amountWithoutTax.toLocaleString("en-IN", {
-				minimumFractionDigits: 2,
-				maximumFractionDigits: 2,
-			}),
-			{
-				x: invoiceLayout.items.columns.amount,
-				y,
-				size: fontSize,
-				font,
-				color: rgb(0, 0, 0),
-			},
-		);
+		const amountText = amountWithoutTax.toLocaleString("en-IN", {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+		});
 
-		page.drawText(
-			item.tax.toLocaleString("en-IN", {
-				minimumFractionDigits: 2,
-				maximumFractionDigits: 2,
-			}),
-			{
-				x: invoiceLayout.items.columns.tax,
-				y,
-				size: fontSize,
-				font,
-				color: rgb(0, 0, 0),
-			},
-		);
+		page.drawText(amountText, {
+			x:
+				invoiceLayout.items.columns.amount -
+				font.widthOfTextAtSize(amountText, fontSize),
+			y,
+			size: fontSize,
+			font,
+			color: rgb(0, 0, 0),
+		});
 
-		page.drawText(
-			item.discount.toLocaleString("en-IN", {
-				minimumFractionDigits: 2,
-				maximumFractionDigits: 2,
-			}),
-			{
-				x: invoiceLayout.items.columns.discount,
-				y,
-				size: fontSize,
-				font,
-				color: rgb(0, 0, 0),
-			},
-		);
+		const taxText = item.tax.toLocaleString("en-IN", {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+		});
 
-		page.drawText(
-			item.lineTotal.toLocaleString("en-IN", {
-				minimumFractionDigits: 2,
-				maximumFractionDigits: 2,
-			}),
-			{
-				x: invoiceLayout.items.columns.total,
-				y,
-				size: fontSize,
-				font,
-				color: rgb(0, 0, 0),
-			},
-		);
+		page.drawText(taxText, {
+			x:
+				invoiceLayout.items.columns.tax -
+				font.widthOfTextAtSize(taxText, fontSize),
+			y,
+			size: fontSize,
+			font,
+			color: rgb(0, 0, 0),
+		});
+
+		const discountText = item.discount.toLocaleString("en-IN", {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+		});
+
+		page.drawText(discountText, {
+			x:
+				invoiceLayout.items.columns.discount -
+				font.widthOfTextAtSize(discountText, fontSize),
+			y,
+			size: fontSize,
+			font,
+			color: rgb(0, 0, 0),
+		});
+
+		const totalText = item.lineTotal.toLocaleString("en-IN", {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+		});
+
+		page.drawText(totalText, {
+			x:
+				invoiceLayout.items.columns.total -
+				font.widthOfTextAtSize(totalText, fontSize),
+			y,
+			size: fontSize,
+			font,
+			color: rgb(0, 0, 0),
+		});
 	};
 
 	const drawPageItems = (
@@ -357,32 +361,44 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			color: rgb(0, 0, 0),
 		});
 
-		page.drawText("Amount", {
-			x: invoiceLayout.items.columns.amount,
+		const amountHeader = "Amount";
+		page.drawText(amountHeader, {
+			x:
+				invoiceLayout.items.columns.amount -
+				boldFont.widthOfTextAtSize(amountHeader, 8),
 			y,
 			size: 8,
 			font: boldFont,
 			color: rgb(0, 0, 0),
 		});
 
-		page.drawText("Tax", {
-			x: invoiceLayout.items.columns.tax,
+		const taxHeader = "Tax";
+		page.drawText(taxHeader, {
+			x:
+				invoiceLayout.items.columns.tax -
+				boldFont.widthOfTextAtSize(taxHeader, 8),
 			y,
 			size: 8,
 			font: boldFont,
 			color: rgb(0, 0, 0),
 		});
 
-		page.drawText("Discount", {
-			x: invoiceLayout.items.columns.discount,
+		const discountHeader = "Discount";
+		page.drawText(discountHeader, {
+			x:
+				invoiceLayout.items.columns.discount -
+				boldFont.widthOfTextAtSize(discountHeader, 8),
 			y,
 			size: 8,
 			font: boldFont,
 			color: rgb(0, 0, 0),
 		});
 
-		page.drawText("Total", {
-			x: invoiceLayout.items.columns.total,
+		const totalHeader = "Total";
+		page.drawText(totalHeader, {
+			x:
+				invoiceLayout.items.columns.total -
+				boldFont.widthOfTextAtSize(totalHeader, 8),
 			y,
 			size: 8,
 			font: boldFont,
@@ -391,7 +407,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 
 		page.drawLine({
 			start: {
-				x: 52,
+				x: 35,
 				y: y - 8,
 			},
 			end: {
@@ -425,11 +441,11 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 				maximumFractionDigits: 2,
 			});
 
-		const subtotalY = 155;
+		const subtotalY = 240;
 
 		page.drawLine({
 			start: {
-				x: 52,
+				x: 35,
 				y: subtotalY + 12,
 			},
 			end: {
@@ -456,32 +472,44 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			color: rgb(0, 0, 0),
 		});
 
-		page.drawText(formatAmount(taxableAmount), {
-			x: invoiceLayout.items.columns.amount,
+		const taxableText = formatAmount(taxableAmount);
+		page.drawText(taxableText, {
+			x:
+				invoiceLayout.items.columns.amount -
+				boldFont.widthOfTextAtSize(taxableText, 8),
 			y: subtotalY,
 			size: 8,
 			font: boldFont,
 			color: rgb(0, 0, 0),
 		});
 
-		page.drawText(formatAmount(invoice.taxTotal), {
-			x: invoiceLayout.items.columns.tax,
+		const taxTotalText = formatAmount(invoice.taxTotal);
+		page.drawText(taxTotalText, {
+			x:
+				invoiceLayout.items.columns.tax -
+				boldFont.widthOfTextAtSize(taxTotalText, 8),
 			y: subtotalY,
 			size: 8,
 			font: boldFont,
 			color: rgb(0, 0, 0),
 		});
 
-		page.drawText(formatAmount(totalDiscount), {
-			x: invoiceLayout.items.columns.discount,
+		const discountTotalText = formatAmount(totalDiscount);
+		page.drawText(discountTotalText, {
+			x:
+				invoiceLayout.items.columns.discount -
+				boldFont.widthOfTextAtSize(discountTotalText, 8),
 			y: subtotalY,
 			size: 8,
 			font: boldFont,
 			color: rgb(0, 0, 0),
 		});
 
-		page.drawText(formatAmount(invoice.grandTotal), {
-			x: invoiceLayout.items.columns.total,
+		const grandTotalText = formatAmount(invoice.grandTotal);
+		page.drawText(grandTotalText, {
+			x:
+				invoiceLayout.items.columns.total -
+				boldFont.widthOfTextAtSize(grandTotalText, 8),
 			y: subtotalY,
 			size: 8,
 			font: boldFont,
@@ -491,10 +519,10 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 		const summaryLabelX = 390;
 		const summaryAmountX = 548;
 
-		const taxableY = 118;
-		const cgstY = 94;
-		const sgstY = 70;
-		const totalY = 34;
+		const taxableY = 220;
+		const cgstY = 200;
+		const sgstY = 180;
+		const totalY = 160;
 
 		const drawSummaryRow = (
 			label: string,
@@ -547,8 +575,8 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 		const amountInWordsText = `Amount in Words: ${amountInWords}`;
 
 		page.drawText(amountInWordsText, {
-			x: 55,
-			y: 14,
+			x: 35,
+			y: 160,
 			size: 7,
 			font,
 			color: rgb(0, 0, 0),
