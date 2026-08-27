@@ -118,29 +118,36 @@ export default function DashboardPage() {
 
 	return (
 		<AppShell>
-			<Stack spacing={4}>
+			<Stack spacing={{ xs: 2.5, sm: 4 }}>
 				{/* Heading */}
 				<Box>
-					<Typography variant='h4' sx={{ fontWeight: 700 }}>
+					<Typography
+						variant='h4'
+						sx={{
+							fontSize: { xs: "1.5rem", sm: "2.125rem" },
+							fontWeight: 700,
+						}}
+					>
 						Good afternoon, Saji 👋
 					</Typography>
 
-					<Typography color='text.secondary' sx={{ mt: 1 }}>
+					<Typography color='text.secondary' sx={{ mt: { xs: 0.5, sm: 1 } }}>
 						Here&apos;s what&apos;s happening with Jeff Systems today.
 					</Typography>
 				</Box>
 
 				{/* Quick Actions */}
 				<Box>
-					<Typography variant='h6' sx={{ fontWeight: 700, mb: 2 }}>
+					<Typography variant='h6' sx={{ fontWeight: 700, mb: 1.5 }}>
 						Quick Actions
 					</Typography>
 
-					<Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+					<Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
 						<Button
 							variant='contained'
 							startIcon={<ReceiptLongOutlined />}
 							href='/billing'
+							sx={{ width: { xs: "100%", sm: "auto" } }}
 						>
 							Create Bill
 						</Button>
@@ -149,6 +156,7 @@ export default function DashboardPage() {
 							variant='outlined'
 							startIcon={<AddOutlined />}
 							href='/products'
+							sx={{ width: { xs: "100%", sm: "auto" } }}
 						>
 							Add Product
 						</Button>
@@ -156,7 +164,7 @@ export default function DashboardPage() {
 				</Box>
 
 				{/* Statistics */}
-				<Grid container spacing={2}>
+				<Grid container spacing={{ xs: 1.5, sm: 2 }}>
 					{stats.map((stat) => (
 						<Grid key={stat.title} size={{ xs: 12, sm: 6, md: 4 }}>
 							<Card sx={{ height: "100%" }}>
@@ -171,24 +179,31 @@ export default function DashboardPage() {
 											justifyContent: "flex-start",
 										}}
 									>
-										<CardContent>
-											<Stack spacing={2}>
+										<CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+											<Stack
+												direction={{ xs: "row", sm: "column" }}
+												spacing={{ xs: 2, sm: 2 }}
+												sx={{
+													alignItems: { xs: "center", sm: "flex-start" },
+												}}
+											>
 												<Box
 													sx={{
-														width: 42,
-														height: 42,
+														width: { xs: 44, sm: 42 },
+														height: { xs: 44, sm: 42 },
 														borderRadius: 2,
 														display: "flex",
 														alignItems: "center",
 														justifyContent: "center",
 														bgcolor: "primary.main",
 														color: "white",
+														flexShrink: 0,
 													}}
 												>
 													{stat.icon}
 												</Box>
 
-												<Box>
+												<Box sx={{ minWidth: 0, flex: 1 }}>
 													<Typography variant='body2' color='text.secondary'>
 														{stat.title}
 													</Typography>
@@ -196,8 +211,9 @@ export default function DashboardPage() {
 													<Typography
 														variant='h5'
 														sx={{
+															fontSize: { xs: "1.25rem", sm: "1.5rem" },
 															fontWeight: 700,
-															mt: 0.5,
+															mt: 0.25,
 														}}
 													>
 														{stat.value}
@@ -214,24 +230,31 @@ export default function DashboardPage() {
 										</CardContent>
 									</CardActionArea>
 								) : (
-									<CardContent>
-										<Stack spacing={2}>
+									<CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+										<Stack
+											direction={{ xs: "row", sm: "column" }}
+											spacing={{ xs: 2, sm: 2 }}
+											sx={{
+												alignItems: { xs: "center", sm: "flex-start" },
+											}}
+										>
 											<Box
 												sx={{
-													width: 42,
-													height: 42,
+													width: { xs: 44, sm: 42 },
+													height: { xs: 44, sm: 42 },
 													borderRadius: 2,
 													display: "flex",
 													alignItems: "center",
 													justifyContent: "center",
 													bgcolor: "primary.main",
 													color: "white",
+													flexShrink: 0,
 												}}
 											>
 												{stat.icon}
 											</Box>
 
-											<Box>
+											<Box sx={{ minWidth: 0, flex: 1 }}>
 												<Typography variant='body2' color='text.secondary'>
 													{stat.title}
 												</Typography>
@@ -239,8 +262,9 @@ export default function DashboardPage() {
 												<Typography
 													variant='h5'
 													sx={{
+														fontSize: { xs: "1.25rem", sm: "1.5rem" },
 														fontWeight: 700,
-														mt: 0.5,
+														mt: 0.25,
 													}}
 												>
 													{stat.value}

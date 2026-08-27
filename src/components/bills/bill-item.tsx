@@ -173,81 +173,163 @@ export default function BillItem({
 				spacing={{ xs: 1.5, md: 2 }}
 				sx={{ alignItems: { md: "center" } }}
 			>
-				<Box sx={{ flex: 1, minWidth: 0 }}>
-					<Typography sx={{ fontWeight: 600 }} noWrap>
-						{bill.invoiceNumber}
-					</Typography>
-					<Typography variant='body2' color='text.secondary' noWrap>
-						{bill.customerName}
-					</Typography>
-				</Box>
+				{/* Header row: invoice & customer info, plus mobile action buttons */}
+				<Stack
+					direction='row'
+					sx={{
+						justifyContent: "space-between",
+						alignItems: "flex-start",
+						flex: 1,
+						minWidth: 0,
+					}}
+				>
+					<Box sx={{ minWidth: 0, flex: 1, pr: 1 }}>
+						<Typography sx={{ fontWeight: 600 }} noWrap>
+							{bill.invoiceNumber}
+						</Typography>
+						<Typography variant='body2' color='text.secondary' noWrap>
+							{bill.customerName}
+						</Typography>
+					</Box>
 
+					{/* Mobile action buttons */}
+					<Stack
+						direction='row'
+						spacing={0.5}
+						sx={{ display: { xs: "flex", md: "none" }, flexShrink: 0 }}
+					>
+						<IconButton
+							size='small'
+							aria-label={`Edit ${bill.invoiceNumber}`}
+							onClick={() => onEdit(bill)}
+							disabled={actionsDisabled}
+						>
+							<EditOutlined fontSize='small' />
+						</IconButton>
+						<IconButton
+							size='small'
+							aria-label={`Download PDF for ${bill.invoiceNumber}`}
+							onClick={() => onDownloadPdf(bill)}
+							disabled={downloadLoading || actionsDisabled}
+						>
+							{downloadLoading ? "..." : <DownloadOutlined fontSize='small' />}
+						</IconButton>
+						<IconButton
+							size='small'
+							aria-label={`Delete ${bill.invoiceNumber}`}
+							color='error'
+							onClick={() => onDelete(bill)}
+							disabled={actionsDisabled}
+						>
+							<DeleteOutlined fontSize='small' />
+						</IconButton>
+					</Stack>
+				</Stack>
+
+				{/* Middle details: Date, Total, Payment Status */}
 				<Stack
 					direction={{ xs: "column", sm: "row" }}
-					spacing={{ xs: 0.5, sm: 3 }}
-					sx={{ width: { md: 400 } }}
+					spacing={{ xs: 1, sm: 3 }}
+					sx={{ width: { md: 400 }, alignItems: { sm: "center" } }}
 				>
-					<Box sx={{ minWidth: { sm: 120 } }}>
-						<Typography
-							variant='caption'
-							color='text.secondary'
-							sx={{ display: { sm: "none" } }}
-						>
-							Invoice Date
-						</Typography>
-						<Typography variant='body2'>{bill.invoiceDate}</Typography>
-					</Box>
-					<Box sx={{ minWidth: { sm: 120 }, textAlign: { sm: "right" } }}>
-						<Typography
-							variant='caption'
-							color='text.secondary'
-							sx={{ display: { sm: "none" } }}
-						>
-							Grand Total
-						</Typography>
-						<Typography sx={{ fontWeight: 600 }}>
-							₹{bill.grandTotal.toLocaleString("en-IN")}
-						</Typography>
-					</Box>
+					<Stack
+						direction='row'
+						spacing={2}
+						sx={{
+							justifyContent: "space-between",
+							alignItems: "center",
+							display: { xs: "flex", sm: "contents" },
+						}}
+					>
+						<Box sx={{ minWidth: { sm: 120 } }}>
+							<Typography
+								variant='caption'
+								color='text.secondary'
+								sx={{ display: { sm: "none" } }}
+							>
+								Invoice Date
+							</Typography>
+							<Typography variant='body2'>{bill.invoiceDate}</Typography>
+						</Box>
+						<Box sx={{ minWidth: { sm: 120 }, textAlign: { sm: "right" } }}>
+							<Typography
+								variant='caption'
+								color='text.secondary'
+								sx={{ display: { sm: "none" } }}
+							>
+								Grand Total
+							</Typography>
+							<Typography sx={{ fontWeight: 600 }}>
+								₹{bill.grandTotal.toLocaleString("en-IN")}
+							</Typography>
+							{bill.paymentStatus === "partially_paid" && (
+								<Typography
+									variant='caption'
+									color='warning.main'
+									sx={{ display: "block", fontWeight: 600 }}
+								>
+									Pending: ₹{bill.amountPending.toLocaleString("en-IN")}
+								</Typography>
+							)}
+						</Box>
+					</Stack>
+
 					<Box sx={{ minWidth: { sm: 140 } }}>
 						<Typography
 							variant='caption'
 							color='text.secondary'
-							sx={{ display: { sm: "none" } }}
+							sx={{ display: { sm: "none" }, mb: 0.25 }}
 						>
 							Payment Status
 						</Typography>
-						<Chip
-							label={paymentStatusLabels[bill.paymentStatus]}
-							deleteIcon={<ArrowDropDownOutlined />}
-							onClick={(event) => setMenuAnchor(event.currentTarget)}
-							onDelete={(event) => setMenuAnchor(event.currentTarget)}
-							color={
-								bill.paymentStatus === "fully_paid"
-									? "success"
-									: bill.paymentStatus === "partially_paid"
-										? "warning"
-										: "default"
-							}
-							variant='outlined'
-							aria-label={`Payment status: ${paymentStatusLabels[bill.paymentStatus]}`}
-						/>
-						{bill.paymentStatus === "partially_paid" && (
-							<Button
+						<Box
+							sx={{
+								display: "flex",
+								alignItems: "center",
+								gap: 1,
+								flexWrap: "wrap",
+							}}
+						>
+							<Chip
+								label={paymentStatusLabels[bill.paymentStatus]}
+								deleteIcon={<ArrowDropDownOutlined />}
+								onClick={(event) => setMenuAnchor(event.currentTarget)}
+								onDelete={(event) => setMenuAnchor(event.currentTarget)}
+								color={
+									bill.paymentStatus === "fully_paid"
+										? "success"
+										: bill.paymentStatus === "partially_paid"
+											? "warning"
+											: "default"
+								}
 								size='small'
-								onClick={() => openPaymentDialog("partially_paid")}
-								disabled={actionsDisabled}
-							>
-								Add Payment
-							</Button>
-						)}
+								variant='outlined'
+								aria-label={`Payment status: ${paymentStatusLabels[bill.paymentStatus]}`}
+							/>
+							{bill.paymentStatus === "partially_paid" && (
+								<Button
+									size='small'
+									variant='text'
+									onClick={() => openPaymentDialog("partially_paid")}
+									disabled={actionsDisabled}
+									sx={{
+										p: "2px 6px",
+										minWidth: "auto",
+										fontSize: "0.75rem",
+									}}
+								>
+									Add Payment
+								</Button>
+							)}
+						</Box>
 					</Box>
 				</Stack>
 
+				{/* Desktop action buttons */}
 				<Stack
 					direction='row'
 					spacing={0.5}
-					sx={{ alignSelf: { xs: "flex-end", md: "auto" } }}
+					sx={{ display: { xs: "none", md: "flex" } }}
 				>
 					<IconButton
 						aria-label={`Edit ${bill.invoiceNumber}`}
@@ -289,6 +371,11 @@ export default function BillItem({
 				onClose={closePaymentDialog}
 				fullWidth
 				maxWidth='xs'
+				sx={{
+					"& .MuiDialog-paper": {
+						m: { xs: 2, sm: 3 },
+					},
+				}}
 			>
 				<DialogTitle>{dialogTitle}</DialogTitle>
 				<DialogContent>

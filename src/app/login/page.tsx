@@ -62,7 +62,7 @@ export default function LoginPage() {
 					maxWidth: 420,
 				}}
 			>
-				<CardContent sx={{ p: { xs: 3, sm: 4 } }}>
+				<CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
 					<Box
 						component='form'
 						onSubmit={(event) => {
@@ -70,9 +70,15 @@ export default function LoginPage() {
 							handleLogin();
 						}}
 					>
-						<Stack spacing={3}>
+						<Stack spacing={{ xs: 2.5, sm: 3 }}>
 							<Box>
-								<Typography variant='h5' sx={{ fontWeight: 700 }}>
+								<Typography
+									variant='h5'
+									sx={{
+										fontSize: { xs: "1.25rem", sm: "1.5rem" },
+										fontWeight: 700,
+									}}
+								>
 									JEFF SYSTEMS
 								</Typography>
 

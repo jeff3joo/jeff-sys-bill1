@@ -315,7 +315,7 @@ function BillsContent() {
 
 	return (
 		<AppShell>
-			<Stack spacing={4}>
+			<Stack spacing={{ xs: 2.5, sm: 4 }}>
 				{actionError && <Alert severity='error'>{actionError}</Alert>}
 				<Box
 					sx={{
@@ -327,10 +327,16 @@ function BillsContent() {
 					}}
 				>
 					<Box>
-						<Typography variant='h4' sx={{ fontWeight: 700 }}>
+						<Typography
+							variant='h4'
+							sx={{
+								fontSize: { xs: "1.5rem", sm: "2.125rem" },
+								fontWeight: 700,
+							}}
+						>
 							Bills
 						</Typography>
-						<Typography color='text.secondary' sx={{ mt: 1 }}>
+						<Typography color='text.secondary' sx={{ mt: { xs: 0.5, sm: 1 } }}>
 							View and manage your generated bills.
 						</Typography>
 					</Box>
@@ -338,6 +344,7 @@ function BillsContent() {
 						variant='contained'
 						startIcon={<AddOutlined />}
 						href='/billing'
+						sx={{ width: { xs: "100%", sm: "auto" } }}
 					>
 						Create Bill
 					</Button>
@@ -407,6 +414,11 @@ function BillsContent() {
 				}}
 				fullWidth
 				maxWidth='xs'
+				sx={{
+					"& .MuiDialog-paper": {
+						m: { xs: 2, sm: 3 },
+					},
+				}}
 			>
 				<DialogTitle>Delete {deletingBill?.invoiceNumber}?</DialogTitle>
 				<DialogContent>

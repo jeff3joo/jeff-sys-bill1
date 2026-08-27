@@ -20,11 +20,10 @@ import {
 
 import {
 	AddOutlined,
-	Inventory2Outlined,
 	SearchOutlined,
 } from "@mui/icons-material";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Product } from "@/types/product";
 import AppShell from "@/components/layout/app-shell";
 import { createClient } from "@/lib/supabase/client";
@@ -53,6 +52,24 @@ export default function ProductsPage() {
 		setShowForm(true);
 	};
 
+	const loadProducts = useCallback(async () => {
+		setLoading(true);
+		setErrorMessage("");
+
+		try {
+			const result = await getProductsPaginated(page, pageSize, searchQuery);
+
+			setProducts(result.products);
+			setTotalProducts(result.total);
+		} catch (error) {
+			console.error("Failed to load products:", error);
+
+			setErrorMessage("Unable to load products. Please try again.");
+		} finally {
+			setLoading(false);
+		}
+	}, [page, searchQuery]);
+
 	const handleDelete = async () => {
 		if (!deletingProduct) {
 			return;
@@ -77,38 +94,47 @@ export default function ProductsPage() {
 
 			setDeletingProduct(null);
 			await loadProducts();
-
-			setDeletingProduct(null);
 		} finally {
 			setDeleteLoading(false);
 		}
 	};
 
-	const loadProducts = async () => {
-		setLoading(true);
-		setErrorMessage("");
-
-		try {
-			const result = await getProductsPaginated(page, pageSize, searchQuery);
-
-			setProducts(result.products);
-			setTotalProducts(result.total);
-		} catch (error) {
-			console.error("Failed to load products:", error);
-
-			setErrorMessage("Unable to load products. Please try again.");
-		} finally {
-			setLoading(false);
-		}
-	};
-
 	useEffect(() => {
-		loadProducts();
+		let cancelled = false;
+
+		const fetchInitialProducts = async () => {
+			setLoading(true);
+			setErrorMessage("");
+
+			try {
+				const result = await getProductsPaginated(page, pageSize, searchQuery);
+
+				if (!cancelled) {
+					setProducts(result.products);
+					setTotalProducts(result.total);
+				}
+			} catch (error) {
+				if (!cancelled) {
+					console.error("Failed to load products:", error);
+					setErrorMessage("Unable to load products. Please try again.");
+				}
+			} finally {
+				if (!cancelled) {
+					setLoading(false);
+				}
+			}
+		};
+
+		void fetchInitialProducts();
+
+		return () => {
+			cancelled = true;
+		};
 	}, [page, searchQuery]);
 
 	return (
 		<AppShell>
-			<Stack spacing={4}>
+			<Stack spacing={{ xs: 2.5, sm: 4 }}>
 				<Box
 					sx={{
 						display: "flex",
@@ -125,11 +151,17 @@ export default function ProductsPage() {
 					}}
 				>
 					<Box>
-						<Typography variant='h4' sx={{ fontWeight: 700 }}>
+						<Typography
+							variant='h4'
+							sx={{
+								fontSize: { xs: "1.5rem", sm: "2.125rem" },
+								fontWeight: 700,
+							}}
+						>
 							Products & Services
 						</Typography>
 
-						<Typography color='text.secondary' sx={{ mt: 1 }}>
+						<Typography color='text.secondary' sx={{ mt: { xs: 0.5, sm: 1 } }}>
 							Manage the products and services used for billing.
 						</Typography>
 					</Box>
@@ -138,6 +170,7 @@ export default function ProductsPage() {
 						variant='contained'
 						startIcon={<AddOutlined />}
 						onClick={() => setShowForm((value) => !value)}
+						sx={{ width: { xs: "100%", sm: "auto" } }}
 					>
 						Add Item
 					</Button>
@@ -164,8 +197,8 @@ export default function ProductsPage() {
 
 				{showForm && (
 					<Card>
-						<CardContent>
-							<Stack spacing={3}>
+						<CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+							<Stack spacing={{ xs: 2, sm: 3 }}>
 								<Box>
 									<Typography variant='h6' sx={{ fontWeight: 700 }}>
 										{editingProduct
@@ -257,7 +290,7 @@ export default function ProductsPage() {
 								}}
 							>
 								<Typography variant='h6' sx={{ fontWeight: 600 }}>
-									Couldn't load products
+									Couldn&apos;t load products
 								</Typography>
 
 								<Typography variant='body2' color='text.secondary'>
@@ -341,13 +374,18 @@ export default function ProductsPage() {
 				}}
 				fullWidth
 				maxWidth='xs'
+				sx={{
+					"& .MuiDialog-paper": {
+						m: { xs: 2, sm: 3 },
+					},
+				}}
 			>
 				<DialogTitle>Delete {deletingProduct?.name}?</DialogTitle>
 
 				<DialogContent>
 					<DialogContentText>
 						This item will be removed from your products and services catalog.
-						You won't be able to use it when creating new bills.
+						You won&apos;t be able to use it when creating new bills.
 					</DialogContentText>
 					{actionError && (
 						<Typography variant='body2' color='error' sx={{ mt: 2 }}>

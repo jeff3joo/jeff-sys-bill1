@@ -1,14 +1,13 @@
 "use client";
 
 import MobileMenu from "./mobile-menu";
-import { NotificationsOutlined } from "@mui/icons-material";
-import { Avatar, Box, IconButton, Typography } from "@mui/material";
+import { Avatar, Box, Typography } from "@mui/material";
 
 export default function Header() {
 	return (
 		<Box
 			sx={{
-				height: 72,
+				height: { xs: 60, sm: 72 },
 				px: { xs: 2, md: 3 },
 				borderBottom: "1px solid",
 				borderColor: "divider",

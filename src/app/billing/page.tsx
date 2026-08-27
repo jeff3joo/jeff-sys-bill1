@@ -519,14 +519,15 @@ export default function BillingPage() {
 					</Typography>
 				)}
 				{!invoicePreview && (
-					<Stack spacing={4}>
+					<Stack spacing={{ xs: 2.5, sm: 4 }}>
 						{/* Header */}
 						<Box>
 							<Typography
 								variant='h4'
 								sx={{
+									fontSize: { xs: "1.5rem", sm: "2.125rem" },
 									fontWeight: 700,
-									mb: 1,
+									mb: 0.5,
 								}}
 							>
 								{editingInvoiceId ? "Edit Bill" : "New Bill"}
@@ -541,8 +542,8 @@ export default function BillingPage() {
 
 						{/* Customer */}
 						<Card>
-							<CardContent>
-								<Stack spacing={3}>
+							<CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+								<Stack spacing={{ xs: 2, sm: 3 }}>
 									<Box>
 										<Typography variant='h6' sx={{ fontWeight: 700 }}>
 											Customer Details
@@ -619,8 +620,8 @@ export default function BillingPage() {
 								overflow: "visible",
 							}}
 						>
-							<CardContent>
-								<Stack spacing={3}>
+							<CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+								<Stack spacing={{ xs: 2, sm: 3 }}>
 									<Box>
 										<Typography variant='h6' sx={{ fontWeight: 700 }}>
 											Bill Items
@@ -635,7 +636,7 @@ export default function BillingPage() {
 									<Box sx={{ position: "relative" }}>
 										<Stack
 											direction={{ xs: "column", sm: "row" }}
-											spacing={2}
+											spacing={1.5}
 											sx={{
 												alignItems: { xs: "stretch", sm: "flex-start" },
 											}}
@@ -654,7 +655,7 @@ export default function BillingPage() {
 												variant='outlined'
 												onClick={() => setNewItemModalOpen(true)}
 												sx={{
-													minHeight: 36,
+													minHeight: { xs: 44, sm: 56 },
 													width: { xs: "100%", sm: "auto" },
 													whiteSpace: "nowrap",
 												}}
@@ -835,7 +836,7 @@ export default function BillingPage() {
 																xs: "column",
 																sm: "row",
 															}}
-															spacing={2}
+															spacing={{ xs: 1.5, sm: 2 }}
 															sx={{
 																alignItems: {
 																	xs: "stretch",
@@ -843,98 +844,109 @@ export default function BillingPage() {
 																},
 															}}
 														>
-															{/* MRP */}
-															<Box
+															{/* On mobile: MRP and Quantity side-by-side in a row */}
+															<Stack
+																direction='row'
+																spacing={2}
 																sx={{
-																	minWidth: {
-																		sm: 110,
-																	},
+																	justifyContent: "space-between",
+																	alignItems: "center",
+																	display: { xs: "flex", sm: "contents" },
 																}}
 															>
-																<Typography
-																	variant='caption'
-																	color='text.secondary'
-																>
-																	MRP / Unit
-																</Typography>
-
-																<Typography
+																{/* MRP */}
+																<Box
 																	sx={{
-																		fontWeight: 600,
+																		minWidth: {
+																			sm: 110,
+																		},
 																	}}
 																>
-																	{item.mrp > 0
-																		? `₹${item.mrp.toLocaleString("en-IN")}`
-																		: "N/A"}{" "}
-																</Typography>
-															</Box>
-
-															{/* Quantity */}
-															<Box>
-																<Typography
-																	variant='caption'
-																	color='text.secondary'
-																>
-																	Quantity
-																</Typography>
-
-																<Stack
-																	direction='row'
-																	spacing={1}
-																	sx={{
-																		alignItems: "center",
-																	}}
-																>
-																	<Button
-																		variant='outlined'
-																		size='small'
-																		onClick={() =>
-																			updateItemQuantity(
-																				item.lineItemId,
-																				item.quantity - 1,
-																			)
-																		}
-																		disabled={item.quantity <= 1}
-																		sx={{
-																			minWidth: 36,
-																			width: 36,
-																			height: 36,
-																			p: 0,
-																		}}
+																	<Typography
+																		variant='caption'
+																		color='text.secondary'
 																	>
-																		−
-																	</Button>
+																		MRP / Unit
+																	</Typography>
 
 																	<Typography
 																		sx={{
-																			minWidth: 28,
-																			textAlign: "center",
 																			fontWeight: 600,
 																		}}
 																	>
-																		{item.quantity}
+																		{item.mrp > 0
+																			? `₹${item.mrp.toLocaleString("en-IN")}`
+																			: "N/A"}{" "}
+																	</Typography>
+																</Box>
+
+																{/* Quantity */}
+																<Box>
+																	<Typography
+																		variant='caption'
+																		color='text.secondary'
+																	>
+																		Quantity
 																	</Typography>
 
-																	<Button
-																		variant='outlined'
-																		size='small'
-																		onClick={() =>
-																			updateItemQuantity(
-																				item.lineItemId,
-																				item.quantity + 1,
-																			)
-																		}
+																	<Stack
+																		direction='row'
+																		spacing={1}
 																		sx={{
-																			minWidth: 36,
-																			width: 36,
-																			height: 36,
-																			p: 0,
+																			alignItems: "center",
 																		}}
 																	>
-																		+
-																	</Button>
-																</Stack>
-															</Box>
+																		<Button
+																			variant='outlined'
+																			size='small'
+																			onClick={() =>
+																				updateItemQuantity(
+																					item.lineItemId,
+																					item.quantity - 1,
+																				)
+																			}
+																			disabled={item.quantity <= 1}
+																			sx={{
+																				minWidth: 32,
+																				width: 32,
+																				height: 32,
+																				p: 0,
+																			}}
+																		>
+																			−
+																		</Button>
+
+																		<Typography
+																			sx={{
+																				minWidth: 24,
+																				textAlign: "center",
+																				fontWeight: 600,
+																			}}
+																		>
+																			{item.quantity}
+																		</Typography>
+
+																		<Button
+																			variant='outlined'
+																			size='small'
+																			onClick={() =>
+																				updateItemQuantity(
+																					item.lineItemId,
+																					item.quantity + 1,
+																				)
+																			}
+																			sx={{
+																				minWidth: 32,
+																				width: 32,
+																				height: 32,
+																				p: 0,
+																			}}
+																		>
+																			+
+																		</Button>
+																	</Stack>
+																</Box>
+															</Stack>
 
 															{/* Selling Price */}
 															<TextField
@@ -965,7 +977,7 @@ export default function BillingPage() {
 																sx={{
 																	width: {
 																		xs: "100%",
-																		sm: 220,
+																		sm: 200,
 																	},
 																}}
 															/>
@@ -1027,7 +1039,7 @@ export default function BillingPage() {
 
 						{/* Summary */}
 						<Card>
-							<CardContent>
+							<CardContent sx={{ p: { xs: 2, sm: 3 } }}>
 								<Stack spacing={2}>
 									<Typography variant='h6' sx={{ fontWeight: 700 }}>
 										Bill Summary
@@ -1335,166 +1347,258 @@ export default function BillingPage() {
 										Items
 									</Typography>
 
-									<Stack spacing={1.5}>
-										<Box
-											sx={{
-												width: "100%",
-												overflowX: "auto",
-											}}
-										>
+									{/* Mobile Items View (xs only) */}
+									<Stack
+										spacing={1.5}
+										sx={{ display: { xs: "flex", sm: "none" } }}
+									>
+										{invoicePreview.items.map((item) => (
 											<Box
-												component='table'
+												key={item.lineItemId}
 												sx={{
-													width: "100%",
-													borderCollapse: "collapse",
-													minWidth: 700,
+													p: 1.5,
+													borderRadius: 2,
+													bgcolor: "action.hover",
+													border: "1px solid",
+													borderColor: "divider",
 												}}
 											>
-												<Box component='thead'>
-													<Box component='tr'>
-														{[
-															"Item",
-															"MRP / Unit",
-															"Price / Unit",
-															"Qty",
-															"Discount",
-															"Total",
-														].map((heading) => (
-															<Box
-																key={heading}
-																component='th'
-																sx={{
-																	px: 1.5,
-																	py: 1.5,
-																	textAlign:
-																		heading === "Item" ? "left" : "right",
-																	fontSize: "0.8rem",
-																	fontWeight: 600,
-																	color: "text.secondary",
-																	bgcolor: "action.hover",
-																	borderBottom: "1px solid",
-																	borderColor: "divider",
-																	whiteSpace: "nowrap",
-																}}
-															>
-																{heading}
-															</Box>
-														))}
+												<Stack
+													direction='row'
+													sx={{
+														justifyContent: "space-between",
+														alignItems: "flex-start",
+														gap: 1,
+													}}
+												>
+													<Box sx={{ minWidth: 0, flex: 1 }}>
+														<Typography
+															sx={{
+																fontWeight: 600,
+																fontSize: "0.95rem",
+																overflowWrap: "anywhere",
+															}}
+														>
+															{item.name}
+														</Typography>
+														<Typography
+															variant='caption'
+															color='text.secondary'
+														>
+															{item.type} · {item.category}
+														</Typography>
 													</Box>
-												</Box>
+													<Typography
+														sx={{
+															fontWeight: 700,
+															fontSize: "1rem",
+															whiteSpace: "nowrap",
+														}}
+													>
+														₹{item.lineTotal.toLocaleString("en-IN")}
+													</Typography>
+												</Stack>
 
-												<Box component='tbody'>
-													{invoicePreview.items.map((item) => (
-														<Box component='tr' key={item.lineItemId}>
-															<Box
-																component='td'
-																sx={{
-																	px: 1.5,
-																	py: 2,
-																	borderBottom: "1px solid",
-																	borderColor: "divider",
-																	width: "40%",
-																	maxWidth: 320,
-																	verticalAlign: "top",
-																}}
-															>
-																<Typography
-																	sx={{
-																		fontWeight: 600,
-																		overflowWrap: "anywhere",
-																		wordBreak: "break-word",
-																	}}
-																>
-																	{item.name}
-																</Typography>
+												<Stack
+													direction='row'
+													sx={{
+														justifyContent: "space-between",
+														alignItems: "center",
+														mt: 1,
+														pt: 1,
+														borderTop: "1px dashed",
+														borderColor: "divider",
+													}}
+												>
+													<Typography
+														variant='caption'
+														color='text.secondary'
+													>
+														₹{item.sellingPrice.toLocaleString("en-IN")} ×{" "}
+														{item.quantity}
+													</Typography>
+													{item.discount > 0 ? (
+														<Typography
+															variant='caption'
+															color='success.main'
+															sx={{ fontWeight: 600 }}
+														>
+															Disc: -₹
+															{item.discount.toLocaleString("en-IN")}
+														</Typography>
+													) : item.mrp > 0 ? (
+														<Typography
+															variant='caption'
+															color='text.secondary'
+														>
+															MRP: ₹{item.mrp.toLocaleString("en-IN")}
+														</Typography>
+													) : null}
+												</Stack>
+											</Box>
+										))}
+									</Stack>
 
-																<Typography
-																	variant='caption'
-																	color='text.secondary'
-																>
-																	{item.type} · {item.category}
-																</Typography>
-															</Box>
-
-															<Box
-																component='td'
-																sx={{
-																	px: 1.5,
-																	py: 2,
-																	textAlign: "right",
-																	borderBottom: "1px solid",
-																	borderColor: "divider",
-																	whiteSpace: "nowrap",
-																}}
-															>
-																{item.mrp > 0
-																	? `₹${item.mrp.toLocaleString("en-IN")}`
-																	: "N/A"}
-															</Box>
-
-															<Box
-																component='td'
-																sx={{
-																	px: 1.5,
-																	py: 2,
-																	textAlign: "right",
-																	borderBottom: "1px solid",
-																	borderColor: "divider",
-																	whiteSpace: "nowrap",
-																}}
-															>
-																₹{item.sellingPrice.toLocaleString("en-IN")}
-															</Box>
-
-															<Box
-																component='td'
-																sx={{
-																	px: 1.5,
-																	py: 2,
-																	textAlign: "right",
-																	borderBottom: "1px solid",
-																	borderColor: "divider",
-																}}
-															>
-																{item.quantity}
-															</Box>
-
-															<Box
-																component='td'
-																sx={{
-																	px: 1.5,
-																	py: 2,
-																	textAlign: "right",
-																	borderBottom: "1px solid",
-																	borderColor: "divider",
-																	whiteSpace: "nowrap",
-																}}
-															>
-																{item.discount > 0
-																	? `₹${item.discount.toLocaleString("en-IN")}`
-																	: "—"}
-															</Box>
-
-															<Box
-																component='td'
-																sx={{
-																	px: 1.5,
-																	py: 2,
-																	textAlign: "right",
-																	fontWeight: 700,
-																	borderBottom: "1px solid",
-																	borderColor: "divider",
-																	whiteSpace: "nowrap",
-																}}
-															>
-																₹{item.lineTotal.toLocaleString("en-IN")}
-															</Box>
+									{/* Desktop & Tablet Table View (sm and up) */}
+									<Box
+										sx={{
+											width: "100%",
+											overflowX: "auto",
+											display: { xs: "none", sm: "block" },
+										}}
+									>
+										<Box
+											component='table'
+											sx={{
+												width: "100%",
+												borderCollapse: "collapse",
+												minWidth: 650,
+											}}
+										>
+											<Box component='thead'>
+												<Box component='tr'>
+													{[
+														"Item",
+														"MRP / Unit",
+														"Price / Unit",
+														"Qty",
+														"Discount",
+														"Total",
+													].map((heading) => (
+														<Box
+															key={heading}
+															component='th'
+															sx={{
+																px: 1.5,
+																py: 1.5,
+																textAlign:
+																	heading === "Item" ? "left" : "right",
+																fontSize: "0.8rem",
+																fontWeight: 600,
+																color: "text.secondary",
+																bgcolor: "action.hover",
+																borderBottom: "1px solid",
+																borderColor: "divider",
+																whiteSpace: "nowrap",
+															}}
+														>
+															{heading}
 														</Box>
 													))}
 												</Box>
 											</Box>
+
+											<Box component='tbody'>
+												{invoicePreview.items.map((item) => (
+													<Box component='tr' key={item.lineItemId}>
+														<Box
+															component='td'
+															sx={{
+																px: 1.5,
+																py: 2,
+																borderBottom: "1px solid",
+																borderColor: "divider",
+																width: "40%",
+																maxWidth: 320,
+																verticalAlign: "top",
+															}}
+														>
+															<Typography
+																sx={{
+																	fontWeight: 600,
+																	overflowWrap: "anywhere",
+																	wordBreak: "break-word",
+																}}
+															>
+																{item.name}
+															</Typography>
+
+															<Typography
+																variant='caption'
+																color='text.secondary'
+															>
+																{item.type} · {item.category}
+															</Typography>
+														</Box>
+
+														<Box
+															component='td'
+															sx={{
+																px: 1.5,
+																py: 2,
+																textAlign: "right",
+																borderBottom: "1px solid",
+																borderColor: "divider",
+																whiteSpace: "nowrap",
+															}}
+														>
+															{item.mrp > 0
+																? `₹${item.mrp.toLocaleString("en-IN")}`
+																: "N/A"}
+														</Box>
+
+														<Box
+															component='td'
+															sx={{
+																px: 1.5,
+																py: 2,
+																textAlign: "right",
+																borderBottom: "1px solid",
+																borderColor: "divider",
+																whiteSpace: "nowrap",
+															}}
+														>
+															₹{item.sellingPrice.toLocaleString("en-IN")}
+														</Box>
+
+														<Box
+															component='td'
+															sx={{
+																px: 1.5,
+																py: 2,
+																textAlign: "right",
+																borderBottom: "1px solid",
+																borderColor: "divider",
+															}}
+														>
+															{item.quantity}
+														</Box>
+
+														<Box
+															component='td'
+															sx={{
+																px: 1.5,
+																py: 2,
+																textAlign: "right",
+																borderBottom: "1px solid",
+																borderColor: "divider",
+																whiteSpace: "nowrap",
+															}}
+														>
+															{item.discount > 0
+																? `₹${item.discount.toLocaleString("en-IN")}`
+																: "—"}
+														</Box>
+
+														<Box
+															component='td'
+															sx={{
+																px: 1.5,
+																py: 2,
+																textAlign: "right",
+																fontWeight: 700,
+																borderBottom: "1px solid",
+																borderColor: "divider",
+																whiteSpace: "nowrap",
+															}}
+														>
+															₹{item.lineTotal.toLocaleString("en-IN")}
+														</Box>
+													</Box>
+												))}
+											</Box>
 										</Box>
-									</Stack>
+									</Box>
 								</Box>
 								<Divider />
 
@@ -1590,16 +1694,28 @@ export default function BillingPage() {
 								justifyContent: "flex-end",
 							}}
 						>
-							<Button variant='outlined' onClick={handleEditBill}>
+							<Button
+								variant='contained'
+								onClick={handleDownloadPdf}
+								sx={{ width: { xs: "100%", sm: "auto" }, order: { xs: 1, sm: 3 } }}
+							>
+								Download PDF
+							</Button>
+
+							<Button
+								variant='outlined'
+								onClick={handleEditBill}
+								sx={{ width: { xs: "100%", sm: "auto" }, order: { xs: 2, sm: 1 } }}
+							>
 								Edit Bill
 							</Button>
 
-							<Button variant='text' onClick={handleNewBill}>
+							<Button
+								variant='text'
+								onClick={handleNewBill}
+								sx={{ width: { xs: "100%", sm: "auto" }, order: { xs: 3, sm: 2 } }}
+							>
 								New Bill
-							</Button>
-
-							<Button variant='contained' onClick={handleDownloadPdf}>
-								Download PDF
 							</Button>
 						</Stack>
 					</Box>
@@ -1609,6 +1725,11 @@ export default function BillingPage() {
 					onClose={() => setNewItemModalOpen(false)}
 					fullWidth
 					maxWidth='sm'
+					sx={{
+						"& .MuiDialog-paper": {
+							m: { xs: 2, sm: 3 },
+						},
+					}}
 				>
 					<DialogTitle>Create New Item</DialogTitle>
 
