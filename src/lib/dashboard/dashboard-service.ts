@@ -20,7 +20,15 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 	startOfWeek.setHours(0, 0, 0, 0);
 
 	// 2. Start of Month (1st of month 00:00:00)
-	const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+	const startOfMonth = new Date(
+		now.getFullYear(),
+		now.getMonth(),
+		1,
+		0,
+		0,
+		0,
+		0,
+	);
 
 	// 3. Start of Year (Jan 1st 00:00:00)
 	const startOfYear = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
@@ -51,10 +59,13 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 		console.error("Failed to fetch pending invoices:", pendingResult.error);
 	}
 	if (transactionsResult.error) {
-		console.error(
-			"Failed to fetch payment transactions:",
-			transactionsResult.error,
-		);
+		console.error("Failed to fetch payment transactions:", {
+			message: transactionsResult.error.message,
+			details: transactionsResult.error.details,
+			hint: transactionsResult.error.hint,
+			code: transactionsResult.error.code,
+			fullError: transactionsResult.error,
+		});
 	}
 
 	const totalBills = totalBillsResult.count ?? 0;
@@ -97,4 +108,3 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 		thisYearCollection,
 	};
 }
-

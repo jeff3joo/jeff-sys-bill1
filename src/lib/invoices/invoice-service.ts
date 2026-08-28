@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/client";
-import { getTaxAmount } from "@/lib/calculations/billing";
-import type { BillItem, PaymentStatus } from "@/types/billing";
+import { getDiscountAmount, getTaxAmount } from "@/lib/calculations/billing";
+import type {
+	BillItem,
+	InvoicePreviewData,
+	PaymentStatus,
+} from "@/types/billing";
 
 export interface InvoiceSummary {
 	id: string;
@@ -163,4 +167,126 @@ export async function getInvoiceWithItems(
 			};
 		}) as InvoiceItemDetails[],
 	};
+}
+
+export function formatInvoiceForPdf(
+	invoiceWithItems: InvoiceWithItems,
+): InvoicePreviewData {
+	const { invoice, items } = invoiceWithItems;
+	const pdfItems = items.map((item) => ({
+		lineItemId: item.id,
+		productId: item.product_id,
+		name: item.name,
+		type: item.type,
+		category: item.category,
+		quantity: item.quantity,
+		mrp: item.mrp,
+		sellingPrice: item.selling_price,
+		discount: getDiscountAmount({
+			lineItemId: item.product_id,
+			productId: item.product_id,
+			name: item.name,
+			type: item.type,
+			category: item.category,
+			mrp: item.mrp,
+			quantity: item.quantity,
+			sellingPrice: String(item.selling_price),
+		}),
+		discountPercentage: item.discount_percentage,
+		lineTotal: item.line_total,
+		tax: item.tax,
+	}));
+
+	return {
+		invoiceNumber: invoice.invoice_number,
+		createdAt: invoice.created_at,
+		customerName: invoice.customer_name,
+		customerPhone: invoice.customer_phone,
+		customerEmail: invoice.customer_email,
+		customerAddress: invoice.customer_address,
+		subtotal: invoice.subtotal,
+		discountTotal: invoice.discount_total,
+		taxTotal: invoice.tax_total,
+		grandTotal: invoice.grand_total,
+		paymentStatus: invoice.payment_status,
+		amountReceived: invoice.amount_received,
+		amountPending: invoice.amount_pending,
+		items: pdfItems,
+	};
+}
+
+export async function getInvoicesForMonth(
+	fromISO: string,
+	toISO: string,
+): Promise<InvoiceWithItems[]> {
+	const supabase = createClient();
+	const { data: invoices, error: invoiceError } = await supabase
+		.from("invoices")
+		.select(
+			"id, invoice_number, customer_name, customer_phone, customer_email, customer_address, created_at, subtotal, discount_total, tax_total, grand_total, payment_status, amount_received, amount_pending",
+		)
+		.gte("created_at", fromISO)
+		.lt("created_at", toISO)
+		.order("created_at", { ascending: true });
+
+	if (invoiceError) {
+		throw invoiceError;
+	}
+
+	if (!invoices || invoices.length === 0) {
+		return [];
+	}
+
+	const invoiceIds = invoices.map((inv) => inv.id);
+
+	const { data: items, error: itemsError } = await supabase
+		.from("invoice_items")
+		.select(
+			"id, invoice_id, product_id, item_name, item_type, category, mrp, selling_price, quantity, discount_percentage, line_total",
+		)
+		.in("invoice_id", invoiceIds);
+
+	if (itemsError) {
+		throw itemsError;
+	}
+
+	const itemsByInvoiceId = new Map<string, typeof items>();
+	for (const item of items ?? []) {
+		const list = itemsByInvoiceId.get(item.invoice_id) ?? [];
+		list.push(item);
+		itemsByInvoiceId.set(item.invoice_id, list);
+	}
+
+	return invoices.map((invoice) => {
+		const invoiceItems = itemsByInvoiceId.get(invoice.id) ?? [];
+		return {
+			invoice: invoice as InvoiceDetails,
+			items: invoiceItems.map((item) => {
+				const billItem: BillItem = {
+					lineItemId: item.id,
+					productId: item.product_id,
+					name: item.item_name,
+					type: item.item_type,
+					category: item.category,
+					mrp: item.mrp,
+					quantity: item.quantity,
+					sellingPrice: String(item.selling_price),
+				};
+
+				return {
+					id: item.id,
+					product_id: item.product_id,
+					name: item.item_name,
+					type: item.item_type,
+					category: item.category,
+					mrp: item.mrp,
+					selling_price: item.selling_price,
+					quantity: item.quantity,
+					discount_percentage: item.discount_percentage,
+					line_total: item.line_total,
+					tax: getTaxAmount(billItem),
+				};
+			}) as InvoiceItemDetails[],
+		};
+	});
 }

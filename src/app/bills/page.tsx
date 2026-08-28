@@ -12,24 +12,25 @@ import {
 	Stack,
 	Typography,
 } from "@mui/material";
-import { AddOutlined } from "@mui/icons-material";
+import { AddOutlined, FileDownloadOutlined } from "@mui/icons-material";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/layout/app-shell";
 import BillList from "@/components/bills/bill-list";
-import { type Bill } from "@/components/bills/bill-item";
+import type { Bill } from "@/components/bills/bill-item";
 import BillPagination from "@/components/bills/bill-pagination";
 import BillToolbar, {
 	type BillDateFilter,
 } from "@/components/bills/bill-toolbar";
+import MonthlyExportDialog from "@/components/bills/monthly-export-dialog";
 import {
+	formatInvoiceForPdf,
 	getInvoicesPaginated,
 	getInvoiceWithItems,
 	type InvoiceDateRange,
 } from "@/lib/invoices/invoice-service";
 import { createInvoicePdf } from "@/lib/pdf/invoice";
-import { getDiscountAmount } from "@/lib/calculations/billing";
-import type { InvoicePreviewData, PaymentStatus } from "@/types/billing";
+import type { PaymentStatus } from "@/types/billing";
 import { deleteInvoice } from "@/app/billing/actions";
 
 const PAGE_SIZE = 10;
@@ -77,6 +78,7 @@ function BillsContent() {
 	const [deletingBill, setDeletingBill] = useState<Bill | null>(null);
 	const [deleteError, setDeleteError] = useState("");
 	const [deleteLoading, setDeleteLoading] = useState(false);
+	const [monthlyExportOpen, setMonthlyExportOpen] = useState(false);
 	const billsRequestRef = useRef(0);
 
 	if (currentStatusParam !== prevStatusParam) {
@@ -98,39 +100,39 @@ function BillsContent() {
 	};
 
 	const getDateRange = useCallback((): InvoiceDateRange | undefined => {
-		const now = new Date();
-
 		if (dateFilter === "today") {
+			const today = new Date();
 			return {
-				from: getLocalDayStart(now).toISOString(),
-				to: getLocalDayEnd(now).toISOString(),
+				from: getLocalDayStart(today).toISOString(),
+				to: getLocalDayEnd(today).toISOString(),
 			};
 		}
 
 		if (dateFilter === "week") {
-			const daysSinceMonday = (now.getDay() + 6) % 7;
-			const start = getLocalDayStart(now);
-			start.setDate(start.getDate() - daysSinceMonday);
+			const now = new Date();
+			const startOfWeek = new Date(now);
+			const day = startOfWeek.getDay();
+			const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+			startOfWeek.setDate(diff);
 
 			return {
-				from: start.toISOString(),
+				from: getLocalDayStart(startOfWeek).toISOString(),
 				to: getLocalDayEnd(now).toISOString(),
 			};
 		}
 
 		if (dateFilter === "month") {
-			const start = getLocalDayStart(now);
-			start.setDate(1);
+			const now = new Date();
+			const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
 			return {
-				from: start.toISOString(),
+				from: getLocalDayStart(startOfMonth).toISOString(),
 				to: getLocalDayEnd(now).toISOString(),
 			};
 		}
 
 		if (dateFilter === "custom") {
 			const range: InvoiceDateRange = {};
-
 			if (fromDate) {
 				const parsedFromDate = new Date(`${fromDate}T00:00:00`);
 				range.from = getLocalDayStart(parsedFromDate).toISOString();
@@ -198,6 +200,7 @@ function BillsContent() {
 				if (billsRequestRef.current !== requestId) {
 					return;
 				}
+
 				console.error("Failed to load invoices:", fetchError);
 				setError(true);
 			} finally {
@@ -206,7 +209,7 @@ function BillsContent() {
 				}
 			}
 		},
-		[getDateRange, searchQuery, paymentStatuses],
+		[getDateRange, paymentStatuses, searchQuery],
 	);
 
 	useEffect(() => {
@@ -221,53 +224,14 @@ function BillsContent() {
 
 	const handleDownloadPdf = async (bill: Bill) => {
 		if (downloadingBillId) {
-			return;
 		}
 
 		setDownloadingBillId(bill.id);
 		setActionError("");
 
 		try {
-			const { invoice, items } = await getInvoiceWithItems(bill.id);
-			const pdfItems = items.map((item) => ({
-				lineItemId: item.id,
-				productId: item.product_id,
-				name: item.name,
-				type: item.type,
-				category: item.category,
-				quantity: item.quantity,
-				mrp: item.mrp,
-				sellingPrice: item.selling_price,
-				discount: getDiscountAmount({
-					lineItemId: item.product_id,
-					productId: item.product_id,
-					name: item.name,
-					type: item.type,
-					category: item.category,
-					mrp: item.mrp,
-					quantity: item.quantity,
-					sellingPrice: String(item.selling_price),
-				}),
-				discountPercentage: item.discount_percentage,
-				lineTotal: item.line_total,
-				tax: item.tax,
-			}));
-			const pdfData: InvoicePreviewData = {
-				invoiceNumber: invoice.invoice_number,
-				createdAt: invoice.created_at,
-				customerName: invoice.customer_name,
-				customerPhone: invoice.customer_phone,
-				customerEmail: invoice.customer_email,
-				customerAddress: invoice.customer_address,
-				subtotal: invoice.subtotal,
-				discountTotal: invoice.discount_total,
-				taxTotal: invoice.tax_total,
-				grandTotal: invoice.grand_total,
-				paymentStatus: invoice.payment_status,
-				amountReceived: invoice.amount_received,
-				amountPending: invoice.amount_pending,
-				items: pdfItems,
-			};
+			const invoiceWithItems = await getInvoiceWithItems(bill.id);
+			const pdfData = formatInvoiceForPdf(invoiceWithItems);
 			const pdfBytes = await createInvoicePdf(pdfData);
 			const blob = new Blob([new Uint8Array(pdfBytes)], {
 				type: "application/pdf",
@@ -275,7 +239,7 @@ function BillsContent() {
 			const url = URL.createObjectURL(blob);
 			const link = document.createElement("a");
 			link.href = url;
-			link.download = `${invoice.invoice_number}.pdf`;
+			link.download = `${invoiceWithItems.invoice.invoice_number}.pdf`;
 			document.body.appendChild(link);
 			link.click();
 			link.remove();
@@ -315,6 +279,10 @@ function BillsContent() {
 
 	return (
 		<AppShell>
+			<MonthlyExportDialog
+				open={monthlyExportOpen}
+				onClose={() => setMonthlyExportOpen(false)}
+			/>
 			<Stack spacing={{ xs: 2.5, sm: 4 }}>
 				{actionError && <Alert severity='error'>{actionError}</Alert>}
 				<Box
@@ -340,14 +308,28 @@ function BillsContent() {
 							View and manage your generated bills.
 						</Typography>
 					</Box>
-					<Button
-						variant='contained'
-						startIcon={<AddOutlined />}
-						href='/billing'
+					<Stack
+						direction={{ xs: "column", sm: "row" }}
+						spacing={1.5}
 						sx={{ width: { xs: "100%", sm: "auto" } }}
 					>
-						Create Bill
-					</Button>
+						<Button
+							variant='outlined'
+							startIcon={<FileDownloadOutlined />}
+							onClick={() => setMonthlyExportOpen(true)}
+							sx={{ width: { xs: "100%", sm: "auto" } }}
+						>
+							Download Monthly Bills
+						</Button>
+						<Button
+							variant='contained'
+							startIcon={<AddOutlined />}
+							href='/billing'
+							sx={{ width: { xs: "100%", sm: "auto" } }}
+						>
+							Create Bill
+						</Button>
+					</Stack>
 				</Box>
 
 				<BillToolbar
