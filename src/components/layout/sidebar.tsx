@@ -65,32 +65,26 @@ export default function Sidebar() {
 				top: 0,
 				left: 0,
 				borderRight: "1px solid",
-				borderColor: "divider",
+				borderColor: "rgba(255, 255, 255, 0.08)",
 				display: "flex",
 				flexDirection: "column",
-				bgcolor: "background.paper",
+				bgcolor: "#0F1F33",
 			}}
 		>
 			{/* Brand Header */}
 			<Box sx={{ px: 2.5, py: 2.5, display: "flex", alignItems: "center", gap: 1.5 }}>
 				<Box
+					component='img'
+					src='/logo/logo.png'
+					alt='Jeff Systems Logo'
 					sx={{
 						width: 36,
 						height: 36,
-						borderRadius: 2,
-						bgcolor: "primary.main",
-						color: "#FFFFFF",
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "center",
-						fontWeight: 800,
-						fontSize: "0.875rem",
-						letterSpacing: "-0.02em",
-						boxShadow: "0 2px 4px rgba(15, 23, 42, 0.15)",
+						borderRadius: 1.5,
+						objectFit: "contain",
+						flexShrink: 0,
 					}}
-				>
-					JS
-				</Box>
+				/>
 				<Box>
 					<Typography
 						variant='subtitle1'
@@ -98,21 +92,21 @@ export default function Sidebar() {
 							fontWeight: 700,
 							lineHeight: 1.2,
 							letterSpacing: "-0.01em",
+							color: "#FFFFFF",
 						}}
 					>
 						JEFF SYSTEMS
 					</Typography>
 					<Typography
 						variant='caption'
-						color='text.secondary'
-						sx={{ fontSize: "0.7rem", fontWeight: 500 }}
+						sx={{ fontSize: "0.7rem", fontWeight: 500, color: "#94A3B8" }}
 					>
 						Billing Platform
 					</Typography>
 				</Box>
 			</Box>
 
-			<Divider />
+			<Divider sx={{ borderColor: "rgba(255, 255, 255, 0.08)" }} />
 
 			{/* Navigation List */}
 			<List sx={{ px: 1.5, py: 2, flex: 1 }}>
@@ -128,28 +122,34 @@ export default function Sidebar() {
 							href={item.href}
 							sx={{
 								borderRadius: 2,
-								mb: 0.5,
+								mb: 0.75,
 								px: 1.5,
 								py: 1,
-								bgcolor: isActive ? "primary.main" : "transparent",
-								color: isActive ? "#FFFFFF" : "text.secondary",
-								fontWeight: isActive ? 600 : 500,
+								bgcolor: isActive ? "rgba(255, 90, 0, 0.14)" : "transparent",
+								color: isActive ? "#FF6A00" : "#94A3B8",
+								border: isActive
+									? "1px solid rgba(255, 90, 0, 0.35)"
+									: "1px solid transparent",
 								boxShadow: isActive
-									? "0 1px 3px rgba(15, 23, 42, 0.15)"
+									? "0 0 12px rgba(255, 90, 0, 0.15)"
 									: "none",
 								transition: "all 0.15s ease-in-out",
 								"&:hover": {
 									bgcolor: isActive
-										? "primary.main"
-										: "rgba(15, 23, 42, 0.04)",
-									color: isActive ? "#FFFFFF" : "text.primary",
+										? "rgba(255, 90, 0, 0.22)"
+										: "rgba(255, 255, 255, 0.06)",
+									color: isActive ? "#FF7A29" : "#FFFFFF",
+									borderColor: isActive
+										? "rgba(255, 90, 0, 0.5)"
+										: "transparent",
 								},
 							}}
 						>
 							<ListItemIcon
 								sx={{
 									minWidth: 32,
-									color: isActive ? "#FFFFFF" : "inherit",
+									color: isActive ? "#FF6A00" : "inherit",
+									transition: "color 0.15s ease-in-out",
 								}}
 							>
 								{item.icon}
@@ -170,20 +170,20 @@ export default function Sidebar() {
 			</List>
 
 			{/* Bottom Section */}
-			<Box sx={{ p: 1.5, borderTop: "1px solid", borderColor: "divider" }}>
+			<Box sx={{ p: 1.5, borderTop: "1px solid", borderColor: "rgba(255, 255, 255, 0.08)" }}>
 				<ListItemButton
 					onClick={handleLogout}
 					sx={{
 						borderRadius: 2,
 						px: 1.5,
 						py: 1,
-						color: "text.secondary",
+						color: "#94A3B8",
 						transition: "all 0.15s ease-in-out",
 						"&:hover": {
-							bgcolor: "error.light",
-							color: "error.main",
+							bgcolor: "rgba(239, 68, 68, 0.15)",
+							color: "#EF4444",
 							"& .MuiListItemIcon-root": {
-								color: "error.main",
+								color: "#EF4444",
 							},
 						},
 					}}

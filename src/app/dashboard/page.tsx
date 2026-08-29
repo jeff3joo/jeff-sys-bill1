@@ -77,8 +77,9 @@ export default function DashboardPage() {
 			description: "All invoices generated",
 			icon: <ReceiptLongOutlined />,
 			href: "/bills",
-			iconBg: "rgba(15, 23, 42, 0.06)",
-			iconColor: "#0F172A",
+			iconBg: "rgba(15, 31, 51, 0.06)",
+			iconColor: "#0F1F33",
+			valueColor: "#0F1F33",
 		},
 		{
 			title: "Pending Collection",
@@ -90,10 +91,10 @@ export default function DashboardPage() {
 					})}`,
 			description: "Unpaid & partially paid bills",
 			icon: <HourglassEmptyOutlined />,
-			iconBg: "rgba(217, 119, 6, 0.1)",
+			iconBg: "rgba(245, 158, 11, 0.1)",
 			iconColor: "#D97706",
+			valueColor: "#D97706",
 			href: "/bills?status=not_paid,partially_paid",
-			highlight: true,
 		},
 		{
 			title: "This Week's Collection",
@@ -105,8 +106,9 @@ export default function DashboardPage() {
 					})}`,
 			description: "Payments received this week",
 			icon: <PaymentsOutlined />,
-			iconBg: "rgba(37, 99, 235, 0.08)",
-			iconColor: "#2563EB",
+			iconBg: "rgba(255, 90, 0, 0.08)",
+			iconColor: "#FF5A00",
+			valueColor: "#FF5A00",
 		},
 		{
 			title: "This Month's Collection",
@@ -118,8 +120,9 @@ export default function DashboardPage() {
 					})}`,
 			description: "Payments received this month",
 			icon: <CalendarMonthOutlined />,
-			iconBg: "rgba(16, 185, 129, 0.08)",
+			iconBg: "rgba(16, 185, 129, 0.1)",
 			iconColor: "#10B981",
+			valueColor: "#059669",
 		},
 		{
 			title: "This Year's Collection",
@@ -131,8 +134,9 @@ export default function DashboardPage() {
 					})}`,
 			description: "Payments received this year",
 			icon: <AccountBalanceWalletOutlined />,
-			iconBg: "rgba(99, 102, 241, 0.08)",
-			iconColor: "#6366F1",
+			iconBg: "rgba(79, 70, 229, 0.08)",
+			iconColor: "#4F46E5",
+			valueColor: "#4F46E5",
 		},
 	];
 
@@ -147,14 +151,14 @@ export default function DashboardPage() {
 							fontSize: { xs: "1.5rem", sm: "2rem" },
 							fontWeight: 800,
 							letterSpacing: "-0.025em",
+							color: "#172033",
 						}}
 					>
 						{greetingTime}, Saji 👋
 					</Typography>
 
 					<Typography
-						color='text.secondary'
-						sx={{ mt: 0.5, fontSize: "0.95rem" }}
+						sx={{ mt: 0.5, fontSize: "0.95rem", color: "#64748B" }}
 					>
 						Here&apos;s what&apos;s happening with Jeff Systems today.
 					</Typography>
@@ -170,7 +174,7 @@ export default function DashboardPage() {
 							textTransform: "uppercase",
 							letterSpacing: "0.05em",
 							fontSize: "0.75rem",
-							color: "text.secondary",
+							color: "#64748B",
 						}}
 					>
 						Quick Actions
@@ -185,6 +189,13 @@ export default function DashboardPage() {
 								width: { xs: "100%", sm: "auto" },
 								px: 2.5,
 								py: 1,
+								bgcolor: "#FF5A00",
+								color: "#FFFFFF",
+								boxShadow: "0 2px 8px rgba(255, 90, 0, 0.28)",
+								"&:hover": {
+									bgcolor: "#E65100",
+									boxShadow: "0 4px 12px rgba(255, 90, 0, 0.4)",
+								},
 							}}
 						>
 							Create Bill
@@ -198,6 +209,12 @@ export default function DashboardPage() {
 								width: { xs: "100%", sm: "auto" },
 								px: 2.5,
 								py: 1,
+								borderColor: "#CBD5E1",
+								color: "#172033",
+								"&:hover": {
+									borderColor: "#94A3B8",
+									bgcolor: "rgba(15, 31, 51, 0.04)",
+								},
 							}}
 						>
 							Add Product
@@ -215,7 +232,7 @@ export default function DashboardPage() {
 							textTransform: "uppercase",
 							letterSpacing: "0.05em",
 							fontSize: "0.75rem",
-							color: "text.secondary",
+							color: "#64748B",
 						}}
 					>
 						Key Financial Overview
@@ -227,10 +244,12 @@ export default function DashboardPage() {
 								<Card
 									sx={{
 										height: "100%",
-										transition: "all 0.2s ease-in-out",
+										bgcolor: "#FFFFFF",
+										border: "1px solid #E2E8F0",
+										transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
 										"&:hover": {
 											transform: "translateY(-2px)",
-											boxShadow: "0 6px 16px rgba(15, 23, 42, 0.07)",
+											boxShadow: "0 8px 16px -2px rgba(15, 31, 51, 0.08), 0 0 0 1px rgba(255, 90, 0, 0.15)",
 											borderColor: "#CBD5E1",
 										},
 									}}
@@ -286,9 +305,7 @@ export default function DashboardPage() {
 																fontWeight: 800,
 																letterSpacing: "-0.02em",
 																mt: 0.5,
-																color: stat.highlight
-																	? "warning.main"
-																	: "text.primary",
+																color: stat.valueColor || "text.primary",
 															}}
 														>
 															{stat.value}
@@ -346,6 +363,7 @@ export default function DashboardPage() {
 															fontWeight: 800,
 															letterSpacing: "-0.02em",
 															mt: 0.5,
+															color: stat.valueColor || "text.primary",
 														}}
 													>
 														{stat.value}

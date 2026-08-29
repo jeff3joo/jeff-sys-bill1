@@ -29,7 +29,17 @@ export default function MobileMenu() {
 				<MenuOutlined />
 			</IconButton>
 
-			<Drawer anchor='left' open={open} onClose={handleClose}>
+			<Drawer
+				anchor='left'
+				open={open}
+				onClose={handleClose}
+				sx={{
+					"& .MuiDrawer-paper": {
+						bgcolor: "#0F1F33",
+						backgroundImage: "none",
+					},
+				}}
+			>
 				<Box
 					sx={{
 						width: 260,

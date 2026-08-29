@@ -93,10 +93,16 @@ export default function ProductItem({
 							display: { xs: "none", sm: "inline-flex" },
 							fontWeight: 600,
 							fontSize: "0.72rem",
-							bgcolor: product.type === "product" ? "#F1F5F9" : "#EFF6FF",
-							color: product.type === "product" ? "#475569" : "#1D4ED8",
+							bgcolor:
+								product.type === "product"
+									? "#F1F5F9"
+									: "rgba(255, 90, 0, 0.08)",
+							color: product.type === "product" ? "#475569" : "#FF5A00",
 							border: "1px solid",
-							borderColor: product.type === "product" ? "#E2E8F0" : "#BFDBFE",
+							borderColor:
+								product.type === "product"
+									? "#E2E8F0"
+									: "rgba(255, 90, 0, 0.25)",
 						}}
 					/>
 					<Typography

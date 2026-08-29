@@ -1321,7 +1321,7 @@ export default function BillingPage() {
 								mt: 4,
 								borderRadius: 3,
 								boxShadow:
-									"0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03)",
+									"0 10px 25px -5px rgba(15, 31, 51, 0.08), 0 4px 6px -2px rgba(15, 31, 51, 0.03)",
 								border: "1px solid",
 								borderColor: "#E2E8F0",
 								bgcolor: "#FFFFFF",
@@ -1341,21 +1341,17 @@ export default function BillingPage() {
 								>
 									<Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
 										<Box
+											component='img'
+											src='/logo/logo.png'
+											alt='Jeff Systems Logo'
 											sx={{
-												width: 42,
-												height: 42,
-												borderRadius: 2,
-												bgcolor: "primary.main",
-												color: "#FFFFFF",
-												display: "flex",
-												alignItems: "center",
-												justifyContent: "center",
-												fontWeight: 800,
-												fontSize: "1rem",
+												width: 44,
+												height: 44,
+												borderRadius: 1.5,
+												objectFit: "contain",
+												flexShrink: 0,
 											}}
-										>
-											JS
-										</Box>
+										/>
 										<Box>
 											<Typography
 												variant='h5'
@@ -1363,6 +1359,7 @@ export default function BillingPage() {
 													fontWeight: 800,
 													letterSpacing: "-0.02em",
 													lineHeight: 1.2,
+													color: "#172033",
 												}}
 											>
 												JEFF SYSTEMS

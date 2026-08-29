@@ -14,7 +14,7 @@ export default function Header() {
 				display: "flex",
 				alignItems: "center",
 				justifyContent: "space-between",
-				bgcolor: "background.paper",
+				bgcolor: "#FFFFFF",
 				position: "sticky",
 				top: 0,
 				zIndex: 10,
@@ -26,26 +26,23 @@ export default function Header() {
 
 				<Box sx={{ display: { xs: "flex", md: "none" }, alignItems: "center", gap: 1 }}>
 					<Box
+						component='img'
+						src='/logo/logo.png'
+						alt='Jeff Systems Logo'
 						sx={{
 							width: 28,
 							height: 28,
-							borderRadius: 1.5,
-							bgcolor: "primary.main",
-							color: "#FFFFFF",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-							fontWeight: 800,
-							fontSize: "0.75rem",
+							borderRadius: 1,
+							objectFit: "contain",
+							flexShrink: 0,
 						}}
-					>
-						JS
-					</Box>
+					/>
 					<Typography
 						sx={{
 							fontWeight: 700,
 							fontSize: "0.95rem",
 							letterSpacing: "-0.01em",
+							color: "#172033",
 						}}
 					>
 						JEFF SYSTEMS
@@ -60,25 +57,29 @@ export default function Header() {
 					alignItems: "center",
 					gap: 1.25,
 					py: 0.5,
-					px: 1,
+					px: 1.25,
 					borderRadius: 2,
+					bgcolor: "#F8FAFC",
+					border: "1px solid",
+					borderColor: "divider",
 				}}
 			>
 				<Avatar
 					sx={{
 						width: 34,
 						height: 34,
-						bgcolor: "primary.main",
+						bgcolor: "#0F1F33",
 						color: "#FFFFFF",
 						fontSize: "0.875rem",
 						fontWeight: 700,
+						border: "2px solid #FF5A00",
 					}}
 				>
 					S
 				</Avatar>
 
 				<Box sx={{ display: { xs: "none", sm: "block" } }}>
-					<Typography variant='body2' sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+					<Typography variant='body2' sx={{ fontWeight: 600, lineHeight: 1.2, color: "#172033" }}>
 						Saji Kumar
 					</Typography>
 
