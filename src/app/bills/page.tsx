@@ -456,21 +456,24 @@ function BillsContent() {
 				sx={{
 					"& .MuiDialog-paper": {
 						m: { xs: 2, sm: 3 },
+						p: 1,
 					},
 				}}
 			>
-				<DialogTitle>Delete {deletingBill?.invoiceNumber}?</DialogTitle>
+				<DialogTitle sx={{ fontWeight: 800, fontSize: "1.15rem", letterSpacing: "-0.01em" }}>
+					Delete {deletingBill?.invoiceNumber}?
+				</DialogTitle>
 				<DialogContent>
-					<DialogContentText>
-						This {isQuotation ? "quotation" : "bill"} and its items will be permanently deleted.
+					<DialogContentText sx={{ color: "text.secondary", fontSize: "0.875rem" }}>
+						This {isQuotation ? "quotation" : "bill"} and its items will be permanently deleted. This action cannot be undone.
 					</DialogContentText>
 					{deleteError && (
-						<Typography color='error' sx={{ mt: 2 }}>
+						<Alert severity='error' sx={{ mt: 2 }}>
 							{deleteError}
-						</Typography>
+						</Alert>
 					)}
 				</DialogContent>
-				<DialogActions>
+				<DialogActions sx={{ px: 3, pb: 2 }}>
 					<Button
 						onClick={() => setDeletingBill(null)}
 						disabled={deleteLoading}
@@ -482,6 +485,11 @@ function BillsContent() {
 						color='error'
 						variant='contained'
 						disabled={deleteLoading}
+						sx={{
+							bgcolor: "error.main",
+							fontWeight: 700,
+							"&:hover": { bgcolor: "error.dark" },
+						}}
 					>
 						{deleteLoading ? "Deleting..." : "Delete"}
 					</Button>

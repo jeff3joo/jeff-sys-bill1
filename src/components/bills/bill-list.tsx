@@ -1,4 +1,5 @@
 import {
+	Box,
 	Button,
 	Card,
 	CardContent,
@@ -41,9 +42,9 @@ export default function BillList({
 	const isQuotation = documentType === "quotation";
 
 	return (
-		<Card>
+		<Card sx={{ overflow: "hidden" }}>
 			<BoxHeader isQuotation={isQuotation} />
-			<CardContent>
+			<Box>
 				{loading && (
 					<ListMessage>
 						<CircularProgress size={28} />
@@ -54,19 +55,22 @@ export default function BillList({
 				)}
 				{!loading && error && (
 					<ListMessage>
-						<Typography variant='h6' sx={{ fontWeight: 600 }}>
+						<Typography variant='subtitle1' sx={{ fontWeight: 700 }}>
 							{isQuotation
 								? "Couldn't load quotations"
 								: "Couldn't load bills"}
 						</Typography>
-						<Button variant='outlined' onClick={onRetry}>
+						<Typography variant='body2' color='text.secondary'>
+							There was an issue retrieving the records.
+						</Typography>
+						<Button variant='outlined' size='small' onClick={onRetry}>
 							Try Again
 						</Button>
 					</ListMessage>
 				)}
 				{!loading && !error && bills.length === 0 && (
 					<ListMessage>
-						<Typography variant='h6' sx={{ fontWeight: 600 }}>
+						<Typography variant='subtitle1' sx={{ fontWeight: 700 }}>
 							{hasFilters
 								? isQuotation
 									? "No matching quotations found"
@@ -74,6 +78,13 @@ export default function BillList({
 								: isQuotation
 									? "No quotations generated yet"
 									: "No bills generated yet"}
+						</Typography>
+						<Typography variant='body2' color='text.secondary'>
+							{hasFilters
+								? "Try adjusting your search query or date/status filters."
+								: isQuotation
+									? "Create your first quotation from the button above."
+									: "Create your first bill from the button above."}
 						</Typography>
 					</ListMessage>
 				)}
@@ -93,7 +104,7 @@ export default function BillList({
 						))}
 					</Stack>
 				)}
-			</CardContent>
+			</Box>
 		</Card>
 	);
 }
@@ -105,24 +116,37 @@ function BoxHeader({ isQuotation }: { isQuotation: boolean }) {
 			sx={{
 				display: { xs: "none", sm: "flex" },
 				px: 2.5,
-				py: 1.5,
+				py: 1.25,
 				borderBottom: "1px solid",
 				borderColor: "divider",
-				bgcolor: "background.default",
+				bgcolor: "#F8FAFC",
 			}}
 		>
-			<Typography variant='caption' color='text.secondary' sx={{ flex: 1 }}>
+			<Typography
+				variant='caption'
+				color='text.secondary'
+				sx={{ flex: 1, fontWeight: 700, letterSpacing: "0.05em", fontSize: "0.72rem" }}
+			>
 				{isQuotation ? "QUOTATION / CUSTOMER" : "INVOICE / CUSTOMER"}
 			</Typography>
 			<Typography
 				variant='caption'
 				color='text.secondary'
-				sx={{ width: isQuotation ? 260 : 400 }}
+				sx={{
+					width: isQuotation ? 260 : 400,
+					fontWeight: 700,
+					letterSpacing: "0.05em",
+					fontSize: "0.72rem",
+				}}
 			>
 				DATE / TOTAL
 			</Typography>
 			<Stack direction='row' sx={{ width: 136 }}>
-				<Typography variant='caption' color='text.secondary'>
+				<Typography
+					variant='caption'
+					color='text.secondary'
+					sx={{ fontWeight: 700, letterSpacing: "0.05em", fontSize: "0.72rem" }}
+				>
 					ACTIONS
 				</Typography>
 			</Stack>
@@ -133,13 +157,13 @@ function BoxHeader({ isQuotation }: { isQuotation: boolean }) {
 function ListMessage({ children }: { children: React.ReactNode }) {
 	return (
 		<Stack
-			spacing={2}
+			spacing={1}
 			sx={{
-				minHeight: 240,
+				minHeight: 220,
 				alignItems: "center",
 				justifyContent: "center",
 				textAlign: "center",
-				px: 2,
+				p: 4,
 			}}
 		>
 			{children}

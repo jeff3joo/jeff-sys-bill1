@@ -1320,12 +1320,14 @@ export default function BillingPage() {
 							sx={{
 								mt: 4,
 								borderRadius: 3,
-								boxShadow: "none",
+								boxShadow:
+									"0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03)",
 								border: "1px solid",
-								borderColor: "divider",
+								borderColor: "#E2E8F0",
+								bgcolor: "#FFFFFF",
 							}}
 						>
-							<CardContent sx={{ p: { xs: 2, sm: 4 } }}>
+							<CardContent sx={{ p: { xs: 2.5, sm: 4.5 } }}>
 								<Stack
 									direction={{ xs: "column", sm: "row" }}
 									sx={{
@@ -1337,24 +1339,43 @@ export default function BillingPage() {
 										gap: 3,
 									}}
 								>
-									<Box>
-										<Typography
-											variant='h5'
+									<Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+										<Box
 											sx={{
+												width: 42,
+												height: 42,
+												borderRadius: 2,
+												bgcolor: "primary.main",
+												color: "#FFFFFF",
+												display: "flex",
+												alignItems: "center",
+												justifyContent: "center",
 												fontWeight: 800,
-												letterSpacing: "-0.02em",
+												fontSize: "1rem",
 											}}
 										>
-											JEFF SYSTEMS
-										</Typography>
+											JS
+										</Box>
+										<Box>
+											<Typography
+												variant='h5'
+												sx={{
+													fontWeight: 800,
+													letterSpacing: "-0.02em",
+													lineHeight: 1.2,
+												}}
+											>
+												JEFF SYSTEMS
+											</Typography>
 
-										<Typography
-											variant='body2'
-											color='text.secondary'
-											sx={{ mt: 0.5 }}
-										>
-											Billing Management
-										</Typography>
+											<Typography
+												variant='caption'
+												color='text.secondary'
+												sx={{ fontWeight: 500 }}
+											>
+												Billing Platform
+											</Typography>
+										</Box>
 									</Box>
 
 									<Box

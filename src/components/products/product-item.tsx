@@ -30,10 +30,12 @@ export default function ProductItem({
 				width: "100%",
 				minWidth: 0,
 				px: { xs: 2, sm: 2.5 },
-				py: 2,
+				py: 1.75,
 				borderBottom: "1px solid",
 				borderColor: "divider",
 				boxSizing: "border-box",
+				transition: "background-color 0.15s ease-in-out",
+				"&:hover": { bgcolor: "rgba(15, 23, 42, 0.018)" },
 				"&:last-child": {
 					borderBottom: "none",
 				},
@@ -64,6 +66,7 @@ export default function ProductItem({
 						<Typography
 							sx={{
 								fontWeight: 600,
+								fontSize: "0.925rem",
 								overflow: "hidden",
 								whiteSpace: "nowrap",
 								textOverflow: "ellipsis",
@@ -77,6 +80,7 @@ export default function ProductItem({
 							color='text.secondary'
 							sx={{
 								display: { xs: "block", sm: "none" },
+								fontSize: "0.75rem",
 							}}
 						>
 							{product.type} · {product.category}
@@ -85,9 +89,14 @@ export default function ProductItem({
 					<Chip
 						label={product.type === "product" ? "Product" : "Service"}
 						size='small'
-						variant='outlined'
 						sx={{
 							display: { xs: "none", sm: "inline-flex" },
+							fontWeight: 600,
+							fontSize: "0.72rem",
+							bgcolor: product.type === "product" ? "#F1F5F9" : "#EFF6FF",
+							color: product.type === "product" ? "#475569" : "#1D4ED8",
+							border: "1px solid",
+							borderColor: product.type === "product" ? "#E2E8F0" : "#BFDBFE",
 						}}
 					/>
 					<Typography
@@ -96,13 +105,15 @@ export default function ProductItem({
 						sx={{
 							minWidth: 120,
 							display: { xs: "none", sm: "block" },
+							fontSize: "0.85rem",
 						}}
 					>
 						{product.category}
 					</Typography>
 					<Typography
 						sx={{
-							fontWeight: 600,
+							fontWeight: 700,
+							fontSize: "0.95rem",
 							minWidth: { sm: 100 },
 							textAlign: { sm: "right" },
 						}}
@@ -111,12 +122,16 @@ export default function ProductItem({
 					</Typography>
 				</Stack>
 				<IconButton
+					size='small'
 					aria-label={`Actions for ${product.name}`}
 					onClick={(event) => {
 						setMenuAnchor(event.currentTarget);
 					}}
+					sx={{
+						"&:hover": { bgcolor: "rgba(15, 23, 42, 0.06)" },
+					}}
 				>
-					<MoreVertOutlined />
+					<MoreVertOutlined fontSize='small' />
 				</IconButton>
 				<Menu
 					anchorEl={menuAnchor}

@@ -163,13 +163,13 @@ export default function BillItem({
 	return (
 		<Box
 			sx={{
-				width: "100%",
-				minWidth: 0,
 				px: { xs: 2, sm: 2.5 },
 				py: 2,
 				borderBottom: "1px solid",
 				borderColor: "divider",
 				boxSizing: "border-box",
+				transition: "background-color 0.15s ease-in-out",
+				"&:hover": { bgcolor: "rgba(15, 23, 42, 0.018)" },
 				"&:last-child": { borderBottom: "none" },
 			}}
 		>
@@ -189,7 +189,7 @@ export default function BillItem({
 					}}
 				>
 					<Box sx={{ minWidth: 0, flex: 1, pr: 1 }}>
-						<Typography sx={{ fontWeight: 600 }} noWrap>
+						<Typography sx={{ fontWeight: 700, fontSize: "0.925rem" }} noWrap>
 							{bill.invoiceNumber}
 						</Typography>
 						<Typography variant='body2' color='text.secondary' noWrap>
@@ -208,6 +208,9 @@ export default function BillItem({
 							aria-label={`Edit ${bill.invoiceNumber}`}
 							onClick={() => onEdit(bill)}
 							disabled={actionsDisabled}
+							sx={{
+								"&:hover": { bgcolor: "rgba(15, 23, 42, 0.06)" },
+							}}
 						>
 							<EditOutlined fontSize='small' />
 						</IconButton>
@@ -216,6 +219,9 @@ export default function BillItem({
 							aria-label={`Download PDF for ${bill.invoiceNumber}`}
 							onClick={() => onDownloadPdf(bill)}
 							disabled={downloadLoading || actionsDisabled}
+							sx={{
+								"&:hover": { bgcolor: "rgba(15, 23, 42, 0.06)" },
+							}}
 						>
 							{downloadLoading ? "..." : <DownloadOutlined fontSize='small' />}
 						</IconButton>
@@ -225,6 +231,9 @@ export default function BillItem({
 							color='error'
 							onClick={() => onDelete(bill)}
 							disabled={actionsDisabled}
+							sx={{
+								"&:hover": { bgcolor: "error.light" },
+							}}
 						>
 							<DeleteOutlined fontSize='small' />
 						</IconButton>
@@ -257,7 +266,7 @@ export default function BillItem({
 							>
 								{isQuotation ? "Quotation Date" : "Invoice Date"}
 							</Typography>
-							<Typography variant='body2'>{bill.invoiceDate}</Typography>
+							<Typography variant='body2' sx={{ fontWeight: 500 }}>{bill.invoiceDate}</Typography>
 						</Box>
 						<Box sx={{ minWidth: { sm: 120 }, textAlign: { sm: "right" } }}>
 							<Typography
@@ -267,14 +276,14 @@ export default function BillItem({
 							>
 								Grand Total
 							</Typography>
-							<Typography sx={{ fontWeight: 600 }}>
+							<Typography sx={{ fontWeight: 700, fontSize: "0.95rem" }}>
 								₹{bill.grandTotal.toLocaleString("en-IN")}
 							</Typography>
 							{!isQuotation && bill.paymentStatus === "partially_paid" && (
 								<Typography
 									variant='caption'
 									color='warning.main'
-									sx={{ display: "block", fontWeight: 600 }}
+									sx={{ display: "block", fontWeight: 700, fontSize: "0.72rem" }}
 								>
 									Pending: ₹{bill.amountPending.toLocaleString("en-IN")}
 								</Typography>
@@ -304,15 +313,34 @@ export default function BillItem({
 									deleteIcon={<ArrowDropDownOutlined />}
 									onClick={(event) => setMenuAnchor(event.currentTarget)}
 									onDelete={(event) => setMenuAnchor(event.currentTarget)}
-									color={
-										bill.paymentStatus === "fully_paid"
-											? "success"
-											: bill.paymentStatus === "partially_paid"
-												? "warning"
-												: "default"
-									}
+									sx={{
+										fontWeight: 600,
+										fontSize: "0.75rem",
+										cursor: "pointer",
+										bgcolor:
+											bill.paymentStatus === "fully_paid"
+												? "#ECFDF5"
+												: bill.paymentStatus === "partially_paid"
+													? "#FFFBEB"
+													: "#F1F5F9",
+										color:
+											bill.paymentStatus === "fully_paid"
+												? "#047857"
+												: bill.paymentStatus === "partially_paid"
+													? "#B45309"
+													: "#475569",
+										border: "1px solid",
+										borderColor:
+											bill.paymentStatus === "fully_paid"
+												? "#A7F3D0"
+												: bill.paymentStatus === "partially_paid"
+													? "#FDE68A"
+													: "#E2E8F0",
+										"& .MuiChip-deleteIcon": {
+											color: "inherit",
+										},
+									}}
 									size='small'
-									variant='outlined'
 									aria-label={`Payment status: ${paymentStatusLabels[bill.paymentStatus]}`}
 								/>
 								{bill.paymentStatus === "partially_paid" && (
@@ -324,10 +352,12 @@ export default function BillItem({
 										sx={{
 											p: "2px 6px",
 											minWidth: "auto",
-											fontSize: "0.75rem",
+											fontSize: "0.72rem",
+											fontWeight: 600,
+											color: "primary.main",
 										}}
 									>
-										Add Payment
+										+ Add
 									</Button>
 								)}
 							</Box>
@@ -342,26 +372,38 @@ export default function BillItem({
 					sx={{ display: { xs: "none", md: "flex" } }}
 				>
 					<IconButton
+						size='small'
 						aria-label={`Edit ${bill.invoiceNumber}`}
 						onClick={() => onEdit(bill)}
 						disabled={actionsDisabled}
+						sx={{
+							"&:hover": { bgcolor: "rgba(15, 23, 42, 0.06)" },
+						}}
 					>
-						<EditOutlined />
+						<EditOutlined fontSize='small' />
 					</IconButton>
 					<IconButton
+						size='small'
 						aria-label={`Download PDF for ${bill.invoiceNumber}`}
 						onClick={() => onDownloadPdf(bill)}
 						disabled={downloadLoading || actionsDisabled}
+						sx={{
+							"&:hover": { bgcolor: "rgba(15, 23, 42, 0.06)" },
+						}}
 					>
-						{downloadLoading ? "..." : <DownloadOutlined />}
+						{downloadLoading ? "..." : <DownloadOutlined fontSize='small' />}
 					</IconButton>
 					<IconButton
+						size='small'
 						aria-label={`Delete ${bill.invoiceNumber}`}
 						color='error'
 						onClick={() => onDelete(bill)}
 						disabled={actionsDisabled}
+						sx={{
+							"&:hover": { bgcolor: "error.light" },
+						}}
 					>
-						<DeleteOutlined />
+						<DeleteOutlined fontSize='small' />
 					</IconButton>
 				</Stack>
 			</Stack>

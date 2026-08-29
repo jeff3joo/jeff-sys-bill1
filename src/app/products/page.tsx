@@ -224,21 +224,21 @@ export default function ProductsPage() {
 					</Card>
 				)}
 
-				<Card>
+				<Card sx={{ overflow: "hidden" }}>
 					<Box
 						sx={{
 							display: { xs: "none", sm: "flex" },
 							px: 2.5,
-							py: 1.5,
+							py: 1.25,
 							borderBottom: "1px solid",
 							borderColor: "divider",
-							bgcolor: "background.default",
+							bgcolor: "#F8FAFC",
 						}}
 					>
 						<Typography
 							variant='caption'
 							color='text.secondary'
-							sx={{ flex: 1 }}
+							sx={{ flex: 1, fontWeight: 700, letterSpacing: "0.05em", fontSize: "0.72rem" }}
 						>
 							ITEM
 						</Typography>
@@ -246,7 +246,7 @@ export default function ProductsPage() {
 						<Typography
 							variant='caption'
 							color='text.secondary'
-							sx={{ width: 120 }}
+							sx={{ width: 120, fontWeight: 700, letterSpacing: "0.05em", fontSize: "0.72rem" }}
 						>
 							CATEGORY
 						</Typography>
@@ -254,14 +254,14 @@ export default function ProductsPage() {
 						<Typography
 							variant='caption'
 							color='text.secondary'
-							sx={{ width: 100, textAlign: "right" }}
+							sx={{ width: 100, textAlign: "right", fontWeight: 700, letterSpacing: "0.05em", fontSize: "0.72rem" }}
 						>
 							MRP
 						</Typography>
 
 						<Box sx={{ width: 40 }} />
 					</Box>
-					<CardContent>
+					<Box>
 						{loading && (
 							<Stack
 								spacing={2}
@@ -280,7 +280,7 @@ export default function ProductsPage() {
 						)}
 						{!loading && errorMessage && (
 							<Stack
-								spacing={2}
+								spacing={1.5}
 								sx={{
 									minHeight: 240,
 									alignItems: "center",
@@ -289,7 +289,7 @@ export default function ProductsPage() {
 									px: 2,
 								}}
 							>
-								<Typography variant='h6' sx={{ fontWeight: 600 }}>
+								<Typography variant='subtitle1' sx={{ fontWeight: 700 }}>
 									Couldn&apos;t load products
 								</Typography>
 
@@ -297,7 +297,7 @@ export default function ProductsPage() {
 									{errorMessage}
 								</Typography>
 
-								<Button variant='outlined' onClick={loadProducts}>
+								<Button variant='outlined' size='small' onClick={loadProducts}>
 									Try Again
 								</Button>
 							</Stack>
@@ -313,10 +313,10 @@ export default function ProductsPage() {
 											alignItems: "center",
 											justifyContent: "center",
 											textAlign: "center",
-											px: 2,
+											p: 4,
 										}}
 									>
-										<Typography variant='h6' sx={{ fontWeight: 600 }}>
+										<Typography variant='subtitle1' sx={{ fontWeight: 700 }}>
 											{searchQuery
 												? "No matching items"
 												: "No products or services yet"}
@@ -344,14 +344,15 @@ export default function ProductsPage() {
 								)}
 							</Box>
 						)}
-					</CardContent>
+					</Box>
 					{!loading && !errorMessage && totalProducts > pageSize && (
 						<Box
 							sx={{
+								p: 2.5,
+								borderTop: "1px solid",
+								borderColor: "divider",
 								display: "flex",
 								justifyContent: "center",
-								px: 2,
-								pb: 3,
 							}}
 						>
 							<Pagination
