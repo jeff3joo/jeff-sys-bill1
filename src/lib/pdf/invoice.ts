@@ -50,6 +50,7 @@ const invoiceLayout = {
 type InvoicePdfData = {
 	invoiceNumber: string;
 	createdAt: string;
+	documentType?: "bill" | "quotation";
 
 	customerName: string;
 	customerPhone: string;
@@ -104,6 +105,41 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 	const italicFont = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
 	const { customer, invoice: invoiceLayoutData } = invoiceLayout;
 
+	const isQuotation =
+		invoice.documentType === "quotation" ||
+		invoice.invoiceNumber?.startsWith("QT-");
+
+	const invoiceNumberText = isQuotation
+		? `Quotation No: ${invoice.invoiceNumber}`
+		: `Invoice: ${invoice.invoiceNumber}`;
+
+	const drawDocumentHeader = (
+		pageToDraw: ReturnType<PDFDocument["getPages"]>[number],
+	) => {
+		if (isQuotation) {
+			pageToDraw.drawRectangle({
+				x: 340,
+				y: 715,
+				width: 230,
+				height: 40,
+				color: rgb(1, 1, 1),
+			});
+
+			const title = "QUOTATION";
+			const titleSize = 14;
+			const titleWidth = boldFont.widthOfTextAtSize(title, titleSize);
+			pageToDraw.drawText(title, {
+				x: 560 - titleWidth,
+				y: 728,
+				size: titleSize,
+				font: boldFont,
+				color: rgb(0, 0, 0),
+			});
+		}
+	};
+
+	drawDocumentHeader(firstPage);
+
 	const wrapText = (text: string, maxWidth: number, fontSize: number) => {
 		const words = text.split(/\s+/);
 		const lines: string[] = [];
@@ -148,7 +184,6 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 		});
 	}
 
-	const invoiceNumberText = `Invoice: ${invoice.invoiceNumber}`;
 	firstPage.drawText(invoiceNumberText, {
 		x: invoiceLayoutData.number.x,
 		y: invoiceLayoutData.number.y,
@@ -612,6 +647,8 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 
 			pdfDoc.addPage(copiedPage);
 			page = copiedPage;
+
+			drawDocumentHeader(page);
 
 			page.drawText(invoiceNumberText, {
 				x: invoiceLayoutData.number.x,

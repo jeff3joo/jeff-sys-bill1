@@ -38,7 +38,7 @@ const navigationItems = [
 		icon: <ReceiptLongOutlined />,
 	},
 	{
-		label: "Bills",
+		label: "History",
 		href: "/bills",
 		icon: <HistoryOutlined />
 	}

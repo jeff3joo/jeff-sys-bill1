@@ -17,6 +17,8 @@ import {
 	Select,
 	Stack,
 	TextField,
+	ToggleButton,
+	ToggleButtonGroup,
 	Typography,
 } from "@mui/material";
 import {
@@ -40,12 +42,22 @@ import { getProducts } from "@/lib/products/product-service";
 import { getInvoiceWithItems } from "@/lib/invoices/invoice-service";
 import type {
 	BillItem,
+	DocumentType,
 	InvoicePreviewData,
 	PaymentStatus,
 } from "@/types/billing";
 import ProductForm from "@/components/products/product-form";
 
 export default function BillingPage() {
+	const [documentType, setDocumentType] = useState<DocumentType>(() => {
+		if (typeof window !== "undefined") {
+			const typeParam = new URLSearchParams(window.location.search).get("type");
+			if (typeParam === "quotation") {
+				return "quotation";
+			}
+		}
+		return "bill";
+	});
 	const [loading, setLoading] = useState(false);
 	const [invoiceLoading, setInvoiceLoading] = useState(false);
 	const [invoiceLoadError, setInvoiceLoadError] = useState("");
@@ -70,6 +82,7 @@ export default function BillingPage() {
 	const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
 	const invoiceLoadRequestRef = useRef(0);
 
+	const isQuotation = documentType === "quotation";
 	const taxTotal = getTotalTax(billItems);
 	const subtotal = getSubtotal(billItems);
 	const grandTotal = getGrandTotal(billItems);
@@ -354,28 +367,20 @@ export default function BillingPage() {
 	};
 
 	const handleGenerateBill = async () => {
-		if (
-			!validateCustomerDetails() ||
-			!validatePaymentDetails() ||
-			billItems.length === 0
-		) {
+		const isCustomerValid = validateCustomerDetails();
+		const isPaymentValid = validatePaymentDetails();
+
+		if (!isCustomerValid || !isPaymentValid) {
 			return;
 		}
 
+		if (billItems.length === 0) {
+			return;
+		}
+
+		setLoading(true);
+
 		try {
-			setLoading(true);
-
-			console.log(
-				"Saving bill items:",
-				billItems.map((item) => ({
-					lineItemId: item.lineItemId,
-					productId: item.productId,
-					name: item.name,
-					sellingPrice: item.sellingPrice,
-					quantity: item.quantity,
-				})),
-			);
-
 			const invoiceItems = billItems.map((item) => ({
 				lineItemId: item.lineItemId,
 				productId: item.productId,
@@ -391,6 +396,12 @@ export default function BillingPage() {
 				lineTotal: getLineTotal(item),
 			}));
 
+			const finalPaymentStatus: PaymentStatus = isQuotation
+				? "not_paid"
+				: paymentStatus;
+			const finalAmountReceived = isQuotation ? 0 : normalizedAmountReceived;
+			const finalAmountPending = isQuotation ? 0 : amountPending;
+
 			const invoiceInput = {
 				invoiceId: editingInvoiceId,
 				customerName: customerName.trim(),
@@ -401,9 +412,10 @@ export default function BillingPage() {
 				discountTotal: totalDiscount,
 				taxTotal,
 				grandTotal,
-				paymentStatus,
-				amountReceived: normalizedAmountReceived,
-				amountPending,
+				paymentStatus: finalPaymentStatus,
+				amountReceived: finalAmountReceived,
+				amountPending: finalAmountPending,
+				documentType,
 			};
 			const invoice = editingInvoiceId
 				? await updateInvoiceWithItems(
@@ -427,9 +439,10 @@ export default function BillingPage() {
 				discountTotal: totalDiscount,
 				taxTotal,
 				grandTotal,
-				paymentStatus,
-				amountReceived: normalizedAmountReceived,
-				amountPending,
+				paymentStatus: finalPaymentStatus,
+				amountReceived: finalAmountReceived,
+				amountPending: finalAmountPending,
+				documentType,
 
 				items: invoiceItems,
 			};
@@ -521,23 +534,77 @@ export default function BillingPage() {
 				{!invoicePreview && (
 					<Stack spacing={{ xs: 2.5, sm: 4 }}>
 						{/* Header */}
-						<Box>
-							<Typography
-								variant='h4'
-								sx={{
-									fontSize: { xs: "1.5rem", sm: "2.125rem" },
-									fontWeight: 700,
-									mb: 0.5,
-								}}
-							>
-								{editingInvoiceId ? "Edit Bill" : "New Bill"}
-							</Typography>
+						<Box
+							sx={{
+								display: "flex",
+								alignItems: { xs: "flex-start", sm: "center" },
+								justifyContent: "space-between",
+								gap: 2,
+								flexDirection: { xs: "column", sm: "row" },
+							}}
+						>
+							<Box>
+								<Typography
+									variant='h4'
+									sx={{
+										fontSize: { xs: "1.5rem", sm: "2.125rem" },
+										fontWeight: 700,
+										mb: 0.5,
+									}}
+								>
+									{editingInvoiceId
+										? isQuotation
+											? "Edit Quotation"
+											: "Edit Bill"
+										: isQuotation
+											? "New Quotation"
+											: "New Bill"}
+								</Typography>
 
-							<Typography variant='body1' color='text.secondary'>
-								{editingInvoiceId
-									? "Update the saved invoice for your customer."
-									: "Create a new invoice for your customer."}
-							</Typography>
+								<Typography variant='body1' color='text.secondary'>
+									{editingInvoiceId
+										? isQuotation
+											? "Update the saved quotation for your customer."
+											: "Update the saved invoice for your customer."
+										: isQuotation
+											? "Create a new quotation for your customer."
+											: "Create a new invoice for your customer."}
+								</Typography>
+							</Box>
+
+							<ToggleButtonGroup
+								value={documentType}
+								exclusive
+								onChange={(_, nextType: DocumentType | null) => {
+									if (nextType && nextType !== documentType) {
+										setDocumentType(nextType);
+									}
+								}}
+								size='small'
+								aria-label='Document type'
+								sx={{ width: { xs: "100%", sm: "auto" } }}
+							>
+								<ToggleButton
+									value='bill'
+									sx={{
+										flex: { xs: 1, sm: "unset" },
+										px: 2.5,
+										fontWeight: 600,
+									}}
+								>
+									Bill
+								</ToggleButton>
+								<ToggleButton
+									value='quotation'
+									sx={{
+										flex: { xs: 1, sm: "unset" },
+										px: 2.5,
+										fontWeight: 600,
+									}}
+								>
+									Quotation
+								</ToggleButton>
+							</ToggleButtonGroup>
 						</Box>
 
 						{/* Customer */}
@@ -1079,92 +1146,126 @@ export default function BillingPage() {
 										</Typography>
 									</Stack>
 
-									<Divider />
+									{!isQuotation && (
+										<>
+											<Divider />
 
-									<Stack spacing={2}>
-										<Typography variant='h6' sx={{ fontWeight: 700 }}>
-											Payment Status
-										</Typography>
+											<Stack spacing={2}>
+												<Typography
+													variant='h6'
+													sx={{ fontWeight: 700 }}
+												>
+													Payment Status
+												</Typography>
 
-										<FormControl fullWidth size='small'>
-											<InputLabel id='payment-status-label'>
-												Payment Status
-											</InputLabel>
-											<Select
-												labelId='payment-status-label'
-												value={paymentStatus}
-												label='Payment Status'
-												onChange={(event) =>
-													handlePaymentStatusChange(
-														event.target.value as PaymentStatus,
-													)
-												}
-											>
-												<MenuItem value='not_paid'>Not Paid</MenuItem>
-												<MenuItem value='partially_paid'>
-													Partially Paid
-												</MenuItem>
-												<MenuItem value='fully_paid'>Fully Paid</MenuItem>
-											</Select>
-										</FormControl>
-
-										{paymentStatus === "partially_paid" && (
-											<TextField
-												fullWidth
-												size='small'
-												type='text'
-												inputMode='decimal'
-												label='Amount Received'
-												placeholder='0.00'
-												value={amountReceived}
-												onChange={(event) => {
-													const value = event.target.value;
-													if (value === "" || /^\d*\.?\d*$/.test(value)) {
-														setAmountReceived(value);
-														if (paymentError) {
-															setPaymentError("");
+												<FormControl fullWidth size='small'>
+													<InputLabel id='payment-status-label'>
+														Payment Status
+													</InputLabel>
+													<Select
+														labelId='payment-status-label'
+														value={paymentStatus}
+														label='Payment Status'
+														onChange={(event) =>
+															handlePaymentStatusChange(
+																event.target.value as PaymentStatus,
+															)
 														}
-													}
-												}}
-												error={Boolean(paymentError)}
-												helperText={
-													paymentError || "Enter the amount already received."
-												}
-											/>
-										)}
+													>
+														<MenuItem value='not_paid'>
+															Not Paid
+														</MenuItem>
+														<MenuItem value='partially_paid'>
+															Partially Paid
+														</MenuItem>
+														<MenuItem value='fully_paid'>
+															Fully Paid
+														</MenuItem>
+													</Select>
+												</FormControl>
 
-										<Stack
-											direction='row'
-											sx={{ justifyContent: "space-between" }}
-										>
-											<Typography color='text.secondary'>
-												Amount Received
-											</Typography>
-											<Typography>
-												₹
-												{normalizedAmountReceived.toLocaleString("en-IN", {
-													minimumFractionDigits: 2,
-													maximumFractionDigits: 2,
-												})}
-											</Typography>
-										</Stack>
+												{paymentStatus === "partially_paid" && (
+													<TextField
+														fullWidth
+														size='small'
+														type='text'
+														inputMode='decimal'
+														label='Amount Received'
+														placeholder='0.00'
+														value={amountReceived}
+														onChange={(event) => {
+															const value =
+																event.target.value;
+															if (
+																value === "" ||
+																/^\d*\.?\d*$/.test(
+																	value,
+																)
+															) {
+																setAmountReceived(
+																	value,
+																);
+																if (paymentError) {
+																	setPaymentError(
+																		"",
+																	);
+																}
+															}
+														}}
+														error={Boolean(paymentError)}
+														helperText={
+															paymentError ||
+															"Enter the amount already received."
+														}
+													/>
+												)}
 
-										<Stack
-											direction='row'
-											sx={{ justifyContent: "space-between" }}
-										>
-											<Typography color='text.secondary'>
-												Amount Pending
-											</Typography>
-											<Typography>
-												₹
-												{amountPending.toLocaleString("en-IN", {
-													minimumFractionDigits: 2,
-													maximumFractionDigits: 2,
-												})}
-											</Typography>
-										</Stack>
-									</Stack>
+												<Stack
+													direction='row'
+													sx={{
+														justifyContent:
+															"space-between",
+													}}
+												>
+													<Typography color='text.secondary'>
+														Amount Received
+													</Typography>
+													<Typography>
+														₹
+														{normalizedAmountReceived.toLocaleString(
+															"en-IN",
+															{
+																minimumFractionDigits: 2,
+																maximumFractionDigits: 2,
+															},
+														)}
+													</Typography>
+												</Stack>
+
+												<Stack
+													direction='row'
+													sx={{
+														justifyContent:
+															"space-between",
+													}}
+												>
+													<Typography color='text.secondary'>
+														Amount Pending
+													</Typography>
+													<Typography>
+														₹
+														{amountPending.toLocaleString(
+															"en-IN",
+															{
+																minimumFractionDigits: 2,
+																maximumFractionDigits: 2,
+															},
+														)}
+													</Typography>
+												</Stack>
+											</Stack>
+										</>
+									)}
 
 									<Stack
 										direction='row'
@@ -1193,11 +1294,19 @@ export default function BillingPage() {
 									>
 										{loading
 											? editingInvoiceId
-												? "Updating Bill..."
-												: "Creating Bill..."
+												? isQuotation
+													? "Updating Quotation..."
+													: "Updating Bill..."
+												: isQuotation
+													? "Creating Quotation..."
+													: "Creating Bill..."
 											: editingInvoiceId
-												? "Update Bill"
-												: "Generate Bill"}
+												? isQuotation
+													? "Update Quotation"
+													: "Update Bill"
+												: isQuotation
+													? "Generate Quotation"
+													: "Generate Bill"}
 									</Button>
 								</Stack>
 							</CardContent>
@@ -1264,7 +1373,10 @@ export default function BillingPage() {
 												letterSpacing: "0.08em",
 											}}
 										>
-											INVOICE
+											{invoicePreview.documentType === "quotation" ||
+											invoicePreview.invoiceNumber.startsWith("QT-")
+												? "QUOTATION"
+												: "INVOICE"}
 										</Typography>
 
 										<Typography
@@ -1707,7 +1819,10 @@ export default function BillingPage() {
 								onClick={handleEditBill}
 								sx={{ width: { xs: "100%", sm: "auto" }, order: { xs: 2, sm: 1 } }}
 							>
-								Edit Bill
+								{invoicePreview.documentType === "quotation" ||
+								invoicePreview.invoiceNumber.startsWith("QT-")
+									? "Edit Quotation"
+									: "Edit Bill"}
 							</Button>
 
 							<Button
@@ -1715,7 +1830,10 @@ export default function BillingPage() {
 								onClick={handleNewBill}
 								sx={{ width: { xs: "100%", sm: "auto" }, order: { xs: 3, sm: 2 } }}
 							>
-								New Bill
+								{invoicePreview.documentType === "quotation" ||
+								invoicePreview.invoiceNumber.startsWith("QT-")
+									? "New Quotation"
+									: "New Bill"}
 							</Button>
 						</Stack>
 					</Box>

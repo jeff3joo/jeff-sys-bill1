@@ -1,4 +1,5 @@
 export type PaymentStatus = "not_paid" | "partially_paid" | "fully_paid";
+export type DocumentType = "bill" | "quotation";
 
 export type BillItem = {
 	lineItemId: string;
@@ -23,6 +24,7 @@ export type InvoicePayload = {
 	amountReceived: number;
 	amountPending: number;
 	items: BillItem[];
+	documentType?: DocumentType;
 };
 
 export type CreateInvoiceInput = {
@@ -38,6 +40,7 @@ export type CreateInvoiceInput = {
 	amountReceived: number;
 	amountPending: number;
 	invoiceId?: string | null;
+	documentType?: DocumentType;
 };
 
 export type InvoiceItemPayload = {
@@ -70,6 +73,7 @@ export type InvoicePreviewData = {
 	paymentStatus: PaymentStatus;
 	amountReceived: number;
 	amountPending: number;
+	documentType?: DocumentType;
 
 	items: {
 		lineItemId: string;

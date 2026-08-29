@@ -24,9 +24,12 @@ import {
 } from "@/lib/invoices/invoice-service";
 import { createInvoicePdf } from "@/lib/pdf/invoice";
 
+import type { DocumentType } from "@/types/billing";
+
 interface MonthlyExportDialogProps {
 	open: boolean;
 	onClose: () => void;
+	documentType?: DocumentType;
 }
 
 interface MonthOption {
@@ -62,7 +65,12 @@ function getMonthOptions(): MonthOption[] {
 export default function MonthlyExportDialog({
 	open,
 	onClose,
+	documentType = "bill",
 }: MonthlyExportDialogProps) {
+	const isQuotation = documentType === "quotation";
+	const docLabelPlural = isQuotation ? "quotations" : "bills";
+	const docLabelTitle = isQuotation ? "Quotations" : "Bills";
+
 	const monthOptions = getMonthOptions();
 	const defaultMonth = monthOptions[0]?.value ?? "";
 
@@ -92,7 +100,7 @@ export default function MonthlyExportDialog({
 
 		setLoading(true);
 		setErrorMessage("");
-		setProgressStatus("Fetching bills...");
+		setProgressStatus(`Fetching ${docLabelPlural}...`);
 
 		try {
 			const startOfMonth = new Date(option.year, option.monthIndex, 1, 0, 0, 0, 0);
@@ -108,10 +116,16 @@ export default function MonthlyExportDialog({
 			const fromISO = startOfMonth.toISOString();
 			const toISO = startOfNextMonth.toISOString();
 
-			const invoicesWithItems = await getInvoicesForMonth(fromISO, toISO);
+			const invoicesWithItems = await getInvoicesForMonth(
+				fromISO,
+				toISO,
+				documentType,
+			);
 
 			if (invoicesWithItems.length === 0) {
-				setErrorMessage("No bills were generated for the selected month.");
+				setErrorMessage(
+					`No ${docLabelPlural} were generated for the selected month.`,
+				);
 				setLoading(false);
 				setProgressStatus("");
 				return;
@@ -142,7 +156,9 @@ export default function MonthlyExportDialog({
 			const monthName = startOfMonth.toLocaleString("en-US", {
 				month: "long",
 			});
-			const zipFileName = `JS-Bills-${monthName}-${option.year}.zip`;
+			const zipFileName = isQuotation
+				? `JS-Quotations-${monthName}-${option.year}.zip`
+				: `JS-Bills-${monthName}-${option.year}.zip`;
 
 			const downloadUrl = URL.createObjectURL(zipBlob);
 			const link = document.createElement("a");
@@ -157,8 +173,10 @@ export default function MonthlyExportDialog({
 			setProgressStatus("");
 			onClose();
 		} catch (error) {
-			console.error("Failed to export monthly bills:", error);
-			setErrorMessage("Failed to export monthly bills. Please try again.");
+			console.error(`Failed to export monthly ${docLabelPlural}:`, error);
+			setErrorMessage(
+				`Failed to export monthly ${docLabelPlural}. Please try again.`,
+			);
 			setLoading(false);
 			setProgressStatus("");
 		}
@@ -176,11 +194,11 @@ export default function MonthlyExportDialog({
 				},
 			}}
 		>
-			<DialogTitle>Download Monthly Bills</DialogTitle>
+			<DialogTitle>Download Monthly {docLabelTitle}</DialogTitle>
 			<DialogContent>
 				<Stack spacing={2.5} sx={{ pt: 1 }}>
 					<Typography variant='body2' color='text.secondary'>
-						Select a month to download all generated bills as a ZIP archive.
+						Select a month to download all generated {docLabelPlural} as a ZIP archive.
 					</Typography>
 
 					<FormControl fullWidth size='small'>
@@ -219,7 +237,7 @@ export default function MonthlyExportDialog({
 					{errorMessage && (
 						<Alert
 							severity={
-								errorMessage.includes("No bills") ? "info" : "error"
+								errorMessage.startsWith("No ") ? "info" : "error"
 							}
 						>
 							{errorMessage}

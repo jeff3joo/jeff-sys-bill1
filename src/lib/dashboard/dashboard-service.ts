@@ -36,14 +36,18 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 	// Query invoices and transactions in parallel
 	const [totalBillsResult, pendingResult, transactionsResult] =
 		await Promise.all([
-			// 1. Total Bills Generated: count all invoices
-			supabase.from("invoices").select("id", { count: "exact", head: true }),
+			// 1. Total Bills Generated: count all bill invoices (excluding quotations)
+			supabase
+				.from("invoices")
+				.select("id", { count: "exact", head: true })
+				.or("document_type.eq.bill,document_type.is.null,invoice_number.ilike.JS-%"),
 
-			// 2. Pending Collection: sum of amount_pending for not_paid and partially_paid
+			// 2. Pending Collection: sum of amount_pending for bills with not_paid and partially_paid
 			supabase
 				.from("invoices")
 				.select("amount_pending")
-				.in("payment_status", ["not_paid", "partially_paid"]),
+				.in("payment_status", ["not_paid", "partially_paid"])
+				.or("document_type.eq.bill,document_type.is.null,invoice_number.ilike.JS-%"),
 
 			// 3. Transactions from start of year onwards
 			supabase

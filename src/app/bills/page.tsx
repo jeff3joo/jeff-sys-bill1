@@ -10,6 +10,8 @@ import {
 	DialogContentText,
 	DialogTitle,
 	Stack,
+	ToggleButton,
+	ToggleButtonGroup,
 	Typography,
 } from "@mui/material";
 import { AddOutlined, FileDownloadOutlined } from "@mui/icons-material";
@@ -30,7 +32,7 @@ import {
 	type InvoiceDateRange,
 } from "@/lib/invoices/invoice-service";
 import { createInvoicePdf } from "@/lib/pdf/invoice";
-import type { PaymentStatus } from "@/types/billing";
+import type { DocumentType, PaymentStatus } from "@/types/billing";
 import { deleteInvoice } from "@/app/billing/actions";
 
 const PAGE_SIZE = 10;
@@ -56,6 +58,11 @@ function parseStatusParams(statusParam: string | null): PaymentStatus[] {
 function BillsContent() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
+
+	const typeParam = searchParams.get("type");
+	const [documentType, setDocumentType] = useState<DocumentType>(() =>
+		typeParam === "quotation" ? "quotation" : "bill",
+	);
 
 	const currentStatusParam = searchParams.get("status");
 	const [prevStatusParam, setPrevStatusParam] = useState(currentStatusParam);
@@ -162,6 +169,7 @@ function BillsContent() {
 					searchQuery,
 					getDateRange(),
 					paymentStatuses,
+					documentType,
 				);
 
 				if (billsRequestRef.current !== requestId) {
@@ -194,6 +202,7 @@ function BillsContent() {
 						paymentStatus: invoice.payment_status,
 						amountReceived: invoice.amount_received,
 						amountPending: invoice.amount_pending,
+						documentType: invoice.document_type || documentType,
 					})),
 				);
 			} catch (fetchError) {
@@ -209,7 +218,7 @@ function BillsContent() {
 				}
 			}
 		},
-		[getDateRange, paymentStatuses, searchQuery],
+		[documentType, getDateRange, paymentStatuses, searchQuery],
 	);
 
 	useEffect(() => {
@@ -224,6 +233,7 @@ function BillsContent() {
 
 	const handleDownloadPdf = async (bill: Bill) => {
 		if (downloadingBillId) {
+			return;
 		}
 
 		setDownloadingBillId(bill.id);
@@ -245,8 +255,10 @@ function BillsContent() {
 			link.remove();
 			setTimeout(() => URL.revokeObjectURL(url), 1000);
 		} catch (downloadError) {
-			console.error("Failed to download invoice PDF:", downloadError);
-			setActionError("Unable to download this bill. Please try again.");
+			console.error("Failed to download document PDF:", downloadError);
+			setActionError(
+				`Unable to download this ${documentType === "quotation" ? "quotation" : "bill"}. Please try again.`,
+			);
 		} finally {
 			setDownloadingBillId(null);
 		}
@@ -261,9 +273,15 @@ function BillsContent() {
 		setDeleteError("");
 
 		try {
-			await deleteInvoice(deletingBill.id);
+			const deletedId = deletingBill.id;
+			await deleteInvoice(deletedId);
 			setDeletingBill(null);
 
+			// Immediately update local list
+			setBills((current) => current.filter((b) => b.id !== deletedId));
+			setTotal((current) => Math.max(0, current - 1));
+
+			// Re-fetch to sync pagination
 			if (bills.length === 1 && page > 1) {
 				setPage(page - 1);
 			} else {
@@ -271,17 +289,24 @@ function BillsContent() {
 			}
 		} catch (deleteActionError) {
 			console.error("Failed to delete invoice:", deleteActionError);
-			setDeleteError("Unable to delete this bill. Please try again.");
+			setDeleteError(
+				deleteActionError instanceof Error
+					? deleteActionError.message
+					: "Unable to delete this document. Please try again.",
+			);
 		} finally {
 			setDeleteLoading(false);
 		}
 	};
+
+	const isQuotation = documentType === "quotation";
 
 	return (
 		<AppShell>
 			<MonthlyExportDialog
 				open={monthlyExportOpen}
 				onClose={() => setMonthlyExportOpen(false)}
+				documentType={documentType}
 			/>
 			<Stack spacing={{ xs: 2.5, sm: 4 }}>
 				{actionError && <Alert severity='error'>{actionError}</Alert>}
@@ -302,10 +327,12 @@ function BillsContent() {
 								fontWeight: 700,
 							}}
 						>
-							Bills
+							{isQuotation ? "Quotations" : "Bills"}
 						</Typography>
 						<Typography color='text.secondary' sx={{ mt: { xs: 0.5, sm: 1 } }}>
-							View and manage your generated bills.
+							{isQuotation
+								? "View and manage your generated quotations."
+								: "View and manage your generated bills."}
 						</Typography>
 					</Box>
 					<Stack
@@ -313,21 +340,49 @@ function BillsContent() {
 						spacing={1.5}
 						sx={{ width: { xs: "100%", sm: "auto" } }}
 					>
+						<ToggleButtonGroup
+							value={documentType}
+							exclusive
+							onChange={(_, nextType: DocumentType | null) => {
+								if (nextType && nextType !== documentType) {
+									setDocumentType(nextType);
+									setPage(1);
+								}
+							}}
+							size='small'
+							aria-label='Document type'
+							sx={{ width: { xs: "100%", sm: "auto" } }}
+						>
+							<ToggleButton
+								value='bill'
+								sx={{ flex: { xs: 1, sm: "unset" }, px: 2, fontWeight: 600 }}
+							>
+								Bills
+							</ToggleButton>
+							<ToggleButton
+								value='quotation'
+								sx={{ flex: { xs: 1, sm: "unset" }, px: 2, fontWeight: 600 }}
+							>
+								Quotations
+							</ToggleButton>
+						</ToggleButtonGroup>
 						<Button
 							variant='outlined'
 							startIcon={<FileDownloadOutlined />}
 							onClick={() => setMonthlyExportOpen(true)}
 							sx={{ width: { xs: "100%", sm: "auto" } }}
 						>
-							Download Monthly Bills
+							{isQuotation
+								? "Download Monthly Quotations"
+								: "Download Monthly Bills"}
 						</Button>
 						<Button
 							variant='contained'
 							startIcon={<AddOutlined />}
-							href='/billing'
+							href={isQuotation ? "/billing?type=quotation" : "/billing"}
 							sx={{ width: { xs: "100%", sm: "auto" } }}
 						>
-							Create Bill
+							{isQuotation ? "Create Quotation" : "Create Bill"}
 						</Button>
 					</Stack>
 				</Box>
@@ -338,6 +393,7 @@ function BillsContent() {
 					fromDate={fromDate}
 					toDate={toDate}
 					paymentStatuses={paymentStatuses}
+					documentType={documentType}
 					onSearchQueryChange={(value) => {
 						setSearchQuery(value);
 						setPage(1);
@@ -367,8 +423,9 @@ function BillsContent() {
 					hasFilters={
 						Boolean(searchQuery.trim()) ||
 						dateFilter !== "all" ||
-						paymentStatuses.length > 0
+						(documentType !== "quotation" && paymentStatuses.length > 0)
 					}
+					documentType={documentType}
 					downloadingBillId={downloadingBillId}
 					deletingBillId={deletingBill?.id ?? null}
 					onRetry={() => void loadBills(page)}
@@ -405,7 +462,7 @@ function BillsContent() {
 				<DialogTitle>Delete {deletingBill?.invoiceNumber}?</DialogTitle>
 				<DialogContent>
 					<DialogContentText>
-						This bill and its invoice items will be permanently deleted.
+						This {isQuotation ? "quotation" : "bill"} and its items will be permanently deleted.
 					</DialogContentText>
 					{deleteError && (
 						<Typography color='error' sx={{ mt: 2 }}>

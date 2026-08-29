@@ -21,7 +21,7 @@ import {
 } from "@mui/icons-material";
 import { useState } from "react";
 import { updatePaymentStatus } from "@/app/bills/actions";
-import type { PaymentStatus } from "@/types/billing";
+import type { DocumentType, PaymentStatus } from "@/types/billing";
 
 export interface Bill {
 	id: string;
@@ -32,6 +32,7 @@ export interface Bill {
 	paymentStatus: "not_paid" | "partially_paid" | "fully_paid";
 	amountReceived: number;
 	amountPending: number;
+	documentType?: DocumentType;
 }
 
 interface BillItemProps {
@@ -59,11 +60,15 @@ export default function BillItem({
 	onDelete,
 	onPaymentUpdated,
 }: BillItemProps) {
+	const isQuotation =
+		bill.documentType === "quotation" ||
+		bill.invoiceNumber?.startsWith("QT-");
 	const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 	const [dialogStatus, setDialogStatus] = useState<PaymentStatus | null>(null);
 	const [addAmount, setAddAmount] = useState("");
 	const [paymentError, setPaymentError] = useState("");
 	const [paymentLoading, setPaymentLoading] = useState(false);
+
 	const numericAddAmount = Number(addAmount);
 	const newAmountReceived =
 		bill.amountReceived +
@@ -230,7 +235,10 @@ export default function BillItem({
 				<Stack
 					direction={{ xs: "column", sm: "row" }}
 					spacing={{ xs: 1, sm: 3 }}
-					sx={{ width: { md: 400 }, alignItems: { sm: "center" } }}
+					sx={{
+						width: { md: isQuotation ? 260 : 400 },
+						alignItems: { sm: "center" },
+					}}
 				>
 					<Stack
 						direction='row'
@@ -247,7 +255,7 @@ export default function BillItem({
 								color='text.secondary'
 								sx={{ display: { sm: "none" } }}
 							>
-								Invoice Date
+								{isQuotation ? "Quotation Date" : "Invoice Date"}
 							</Typography>
 							<Typography variant='body2'>{bill.invoiceDate}</Typography>
 						</Box>
@@ -262,7 +270,7 @@ export default function BillItem({
 							<Typography sx={{ fontWeight: 600 }}>
 								₹{bill.grandTotal.toLocaleString("en-IN")}
 							</Typography>
-							{bill.paymentStatus === "partially_paid" && (
+							{!isQuotation && bill.paymentStatus === "partially_paid" && (
 								<Typography
 									variant='caption'
 									color='warning.main'
@@ -274,55 +282,57 @@ export default function BillItem({
 						</Box>
 					</Stack>
 
-					<Box sx={{ minWidth: { sm: 140 } }}>
-						<Typography
-							variant='caption'
-							color='text.secondary'
-							sx={{ display: { sm: "none" }, mb: 0.25 }}
-						>
-							Payment Status
-						</Typography>
-						<Box
-							sx={{
-								display: "flex",
-								alignItems: "center",
-								gap: 1,
-								flexWrap: "wrap",
-							}}
-						>
-							<Chip
-								label={paymentStatusLabels[bill.paymentStatus]}
-								deleteIcon={<ArrowDropDownOutlined />}
-								onClick={(event) => setMenuAnchor(event.currentTarget)}
-								onDelete={(event) => setMenuAnchor(event.currentTarget)}
-								color={
-									bill.paymentStatus === "fully_paid"
-										? "success"
-										: bill.paymentStatus === "partially_paid"
-											? "warning"
-											: "default"
-								}
-								size='small'
-								variant='outlined'
-								aria-label={`Payment status: ${paymentStatusLabels[bill.paymentStatus]}`}
-							/>
-							{bill.paymentStatus === "partially_paid" && (
-								<Button
+					{!isQuotation && (
+						<Box sx={{ minWidth: { sm: 140 } }}>
+							<Typography
+								variant='caption'
+								color='text.secondary'
+								sx={{ display: { sm: "none" }, mb: 0.25 }}
+							>
+								Payment Status
+							</Typography>
+							<Box
+								sx={{
+									display: "flex",
+									alignItems: "center",
+									gap: 1,
+									flexWrap: "wrap",
+								}}
+							>
+								<Chip
+									label={paymentStatusLabels[bill.paymentStatus]}
+									deleteIcon={<ArrowDropDownOutlined />}
+									onClick={(event) => setMenuAnchor(event.currentTarget)}
+									onDelete={(event) => setMenuAnchor(event.currentTarget)}
+									color={
+										bill.paymentStatus === "fully_paid"
+											? "success"
+											: bill.paymentStatus === "partially_paid"
+												? "warning"
+												: "default"
+									}
 									size='small'
-									variant='text'
-									onClick={() => openPaymentDialog("partially_paid")}
-									disabled={actionsDisabled}
-									sx={{
-										p: "2px 6px",
-										minWidth: "auto",
-										fontSize: "0.75rem",
-									}}
-								>
-									Add Payment
-								</Button>
-							)}
+									variant='outlined'
+									aria-label={`Payment status: ${paymentStatusLabels[bill.paymentStatus]}`}
+								/>
+								{bill.paymentStatus === "partially_paid" && (
+									<Button
+										size='small'
+										variant='text'
+										onClick={() => openPaymentDialog("partially_paid")}
+										disabled={actionsDisabled}
+										sx={{
+											p: "2px 6px",
+											minWidth: "auto",
+											fontSize: "0.75rem",
+										}}
+									>
+										Add Payment
+									</Button>
+								)}
+							</Box>
 						</Box>
-					</Box>
+					)}
 				</Stack>
 
 				{/* Desktop action buttons */}

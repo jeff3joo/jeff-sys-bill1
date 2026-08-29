@@ -6,6 +6,7 @@ import {
 	Stack,
 	Typography,
 } from "@mui/material";
+import type { DocumentType } from "@/types/billing";
 import BillItem, { type Bill } from "./bill-item";
 
 interface BillListProps {
@@ -13,6 +14,7 @@ interface BillListProps {
 	error: boolean;
 	bills: Bill[];
 	hasFilters: boolean;
+	documentType?: DocumentType;
 	downloadingBillId?: string | null;
 	deletingBillId?: string | null;
 	onRetry: () => void;
@@ -27,6 +29,7 @@ export default function BillList({
 	error,
 	bills,
 	hasFilters,
+	documentType = "bill",
 	downloadingBillId = null,
 	deletingBillId = null,
 	onRetry,
@@ -35,22 +38,26 @@ export default function BillList({
 	onDelete,
 	onPaymentUpdated,
 }: BillListProps) {
+	const isQuotation = documentType === "quotation";
+
 	return (
 		<Card>
-			<BoxHeader />
+			<BoxHeader isQuotation={isQuotation} />
 			<CardContent>
 				{loading && (
 					<ListMessage>
 						<CircularProgress size={28} />
 						<Typography variant='body2' color='text.secondary'>
-							Loading bills...
+							{isQuotation ? "Loading quotations..." : "Loading bills..."}
 						</Typography>
 					</ListMessage>
 				)}
 				{!loading && error && (
 					<ListMessage>
 						<Typography variant='h6' sx={{ fontWeight: 600 }}>
-							Couldn&apos;t load bills
+							{isQuotation
+								? "Couldn't load quotations"
+								: "Couldn't load bills"}
 						</Typography>
 						<Button variant='outlined' onClick={onRetry}>
 							Try Again
@@ -61,8 +68,12 @@ export default function BillList({
 					<ListMessage>
 						<Typography variant='h6' sx={{ fontWeight: 600 }}>
 							{hasFilters
-								? "No matching bills found"
-								: "No bills generated yet"}
+								? isQuotation
+									? "No matching quotations found"
+									: "No matching bills found"
+								: isQuotation
+									? "No quotations generated yet"
+									: "No bills generated yet"}
 						</Typography>
 					</ListMessage>
 				)}
@@ -87,7 +98,7 @@ export default function BillList({
 	);
 }
 
-function BoxHeader() {
+function BoxHeader({ isQuotation }: { isQuotation: boolean }) {
 	return (
 		<Stack
 			direction='row'
@@ -101,9 +112,13 @@ function BoxHeader() {
 			}}
 		>
 			<Typography variant='caption' color='text.secondary' sx={{ flex: 1 }}>
-				INVOICE / CUSTOMER
+				{isQuotation ? "QUOTATION / CUSTOMER" : "INVOICE / CUSTOMER"}
 			</Typography>
-			<Typography variant='caption' color='text.secondary' sx={{ width: 400 }}>
+			<Typography
+				variant='caption'
+				color='text.secondary'
+				sx={{ width: isQuotation ? 260 : 400 }}
+			>
 				DATE / TOTAL
 			</Typography>
 			<Stack direction='row' sx={{ width: 136 }}>

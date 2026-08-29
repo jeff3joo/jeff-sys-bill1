@@ -36,6 +36,7 @@ export async function createInvoiceWithItems(
 		p_amount_pending: input.amountPending,
 		p_items: items,
 		p_invoice_id: input.invoiceId ?? null,
+		p_document_type: input.documentType ?? "bill",
 	});
 
 	if (error) {
@@ -45,7 +46,12 @@ export async function createInvoiceWithItems(
 	const newInvoice = data[0];
 	const initialReceived = Math.round(input.amountReceived * 100) / 100;
 
-	if (newInvoice?.id && initialReceived > 0 && input.paymentStatus !== "not_paid") {
+	if (
+		input.documentType !== "quotation" &&
+		newInvoice?.id &&
+		initialReceived > 0 &&
+		input.paymentStatus !== "not_paid"
+	) {
 		const { error: txError } = await supabase
 			.from("payment_transactions")
 			.insert({
@@ -95,6 +101,7 @@ export async function updateInvoiceWithItems(
 		p_amount_pending: input.amountPending,
 		p_items: items,
 		p_invoice_id: invoiceId,
+		p_document_type: input.documentType ?? "bill",
 	});
 
 	if (error) {
@@ -104,7 +111,7 @@ export async function updateInvoiceWithItems(
 	const updatedInvoice = data[0];
 	const delta = Math.round((input.amountReceived - oldAmountReceived) * 100) / 100;
 
-	if (delta > 0) {
+	if (input.documentType !== "quotation" && delta > 0) {
 		const { error: txError } = await supabase
 			.from("payment_transactions")
 			.insert({
@@ -123,11 +130,13 @@ export async function updateInvoiceWithItems(
 
 export async function deleteInvoice(invoiceId: string) {
 	const supabase = await createClient();
+
 	const { error } = await supabase.rpc("delete_invoice", {
 		p_invoice_id: invoiceId,
 	});
 
 	if (error) {
+		console.error("[deleteInvoice] Error deleting document:", error);
 		throw new Error(error.message);
 	}
 }

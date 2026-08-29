@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getDiscountAmount, getTaxAmount } from "@/lib/calculations/billing";
 import type {
 	BillItem,
+	DocumentType,
 	InvoicePreviewData,
 	PaymentStatus,
 } from "@/types/billing";
@@ -15,6 +16,7 @@ export interface InvoiceSummary {
 	payment_status: PaymentStatus;
 	amount_received: number;
 	amount_pending: number;
+	document_type?: DocumentType;
 }
 
 interface PaginatedInvoices {
@@ -37,6 +39,7 @@ export interface InvoiceDetails extends InvoiceSummary {
 	payment_status: "not_paid" | "partially_paid" | "fully_paid";
 	amount_received: number;
 	amount_pending: number;
+	document_type?: DocumentType;
 }
 
 export interface InvoiceItemDetails {
@@ -64,6 +67,7 @@ export async function getInvoicesPaginated(
 	searchQuery: string = "",
 	dateRange?: InvoiceDateRange,
 	paymentStatuses?: PaymentStatus[],
+	documentType: DocumentType = "bill",
 ): Promise<PaginatedInvoices> {
 	const supabase = createClient();
 	const from = (page - 1) * pageSize;
@@ -73,9 +77,17 @@ export async function getInvoicesPaginated(
 	let query = supabase
 		.from("invoices")
 		.select(
-			"id, invoice_number, customer_name, created_at, grand_total, payment_status, amount_received, amount_pending",
+			"id, invoice_number, customer_name, created_at, grand_total, payment_status, amount_received, amount_pending, document_type",
 			{ count: "exact" },
 		);
+
+	if (documentType === "quotation") {
+		query = query.or("document_type.eq.quotation,invoice_number.ilike.QT-%");
+	} else {
+		query = query.or(
+			"document_type.eq.bill,document_type.is.null,invoice_number.ilike.JS-%",
+		);
+	}
 
 	if (search) {
 		const escapedSearch = search.replace(/[%_,]/g, "\\$&");
@@ -93,7 +105,7 @@ export async function getInvoicesPaginated(
 		query = query.lte("created_at", dateRange.to);
 	}
 
-	if (paymentStatuses && paymentStatuses.length > 0) {
+	if (documentType !== "quotation" && paymentStatuses && paymentStatuses.length > 0) {
 		query = query.in("payment_status", paymentStatuses);
 	}
 
@@ -106,7 +118,12 @@ export async function getInvoicesPaginated(
 	}
 
 	return {
-		invoices: (data ?? []) as InvoiceSummary[],
+		invoices: (data ?? []).map((row) => ({
+			...row,
+			document_type:
+				(row.document_type as DocumentType) ||
+				(row.invoice_number?.startsWith("QT-") ? "quotation" : "bill"),
+		})) as InvoiceSummary[],
 		total: count ?? 0,
 	};
 }
@@ -118,7 +135,7 @@ export async function getInvoiceWithItems(
 	const { data: invoice, error: invoiceError } = await supabase
 		.from("invoices")
 		.select(
-			"id, invoice_number, customer_name, customer_phone, customer_email, customer_address, created_at, subtotal, discount_total, tax_total, grand_total, payment_status, amount_received, amount_pending",
+			"id, invoice_number, customer_name, customer_phone, customer_email, customer_address, created_at, subtotal, discount_total, tax_total, grand_total, payment_status, amount_received, amount_pending, document_type",
 		)
 		.eq("id", invoiceId)
 		.single();
@@ -138,8 +155,17 @@ export async function getInvoiceWithItems(
 		throw itemsError;
 	}
 
+	const docType: DocumentType =
+		(invoice?.document_type as DocumentType) ||
+		(invoice?.invoice_number?.startsWith("QT-") ? "quotation" : "bill");
+
+	const invoiceWithDocType: InvoiceDetails = {
+		...(invoice as InvoiceDetails),
+		document_type: docType,
+	};
+
 	return {
-		invoice: invoice as InvoiceDetails,
+		invoice: invoiceWithDocType,
 		items: (items ?? []).map((item) => {
 			const billItem: BillItem = {
 				lineItemId: item.id,
@@ -197,6 +223,10 @@ export function formatInvoiceForPdf(
 		tax: item.tax,
 	}));
 
+	const docType: DocumentType =
+		invoice.document_type ||
+		(invoice.invoice_number?.startsWith("QT-") ? "quotation" : "bill");
+
 	return {
 		invoiceNumber: invoice.invoice_number,
 		createdAt: invoice.created_at,
@@ -211,6 +241,7 @@ export function formatInvoiceForPdf(
 		paymentStatus: invoice.payment_status,
 		amountReceived: invoice.amount_received,
 		amountPending: invoice.amount_pending,
+		documentType: docType,
 		items: pdfItems,
 	};
 }
@@ -218,16 +249,29 @@ export function formatInvoiceForPdf(
 export async function getInvoicesForMonth(
 	fromISO: string,
 	toISO: string,
+	documentType: DocumentType = "bill",
 ): Promise<InvoiceWithItems[]> {
 	const supabase = createClient();
-	const { data: invoices, error: invoiceError } = await supabase
+	let query = supabase
 		.from("invoices")
 		.select(
-			"id, invoice_number, customer_name, customer_phone, customer_email, customer_address, created_at, subtotal, discount_total, tax_total, grand_total, payment_status, amount_received, amount_pending",
+			"id, invoice_number, customer_name, customer_phone, customer_email, customer_address, created_at, subtotal, discount_total, tax_total, grand_total, payment_status, amount_received, amount_pending, document_type",
 		)
 		.gte("created_at", fromISO)
-		.lt("created_at", toISO)
-		.order("created_at", { ascending: true });
+		.lt("created_at", toISO);
+
+	if (documentType === "quotation") {
+		query = query.or("document_type.eq.quotation,invoice_number.ilike.QT-%");
+	} else {
+		query = query.or(
+			"document_type.eq.bill,document_type.is.null,invoice_number.ilike.JS-%",
+		);
+	}
+
+	const { data: invoices, error: invoiceError } = await query.order(
+		"created_at",
+		{ ascending: true },
+	);
 
 	if (invoiceError) {
 		throw invoiceError;

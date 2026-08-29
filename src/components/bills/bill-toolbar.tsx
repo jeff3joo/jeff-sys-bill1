@@ -12,7 +12,7 @@ import {
 	FilterListOutlined,
 	SearchOutlined,
 } from "@mui/icons-material";
-import type { PaymentStatus } from "@/types/billing";
+import type { DocumentType, PaymentStatus } from "@/types/billing";
 
 export type BillDateFilter = "all" | "today" | "week" | "month" | "custom";
 
@@ -22,6 +22,7 @@ export interface BillToolbarProps {
 	fromDate: string;
 	toDate: string;
 	paymentStatuses: PaymentStatus[];
+	documentType?: DocumentType;
 	onSearchQueryChange: (value: string) => void;
 	onDateFilterChange: (value: BillDateFilter) => void;
 	onFromDateChange: (value: string) => void;
@@ -55,6 +56,7 @@ export default function BillToolbar({
 	fromDate,
 	toDate,
 	paymentStatuses,
+	documentType = "bill",
 	onSearchQueryChange,
 	onDateFilterChange,
 	onFromDateChange,
@@ -74,7 +76,11 @@ export default function BillToolbar({
 				<TextField
 					value={searchQuery}
 					onChange={(event) => onSearchQueryChange(event.target.value)}
-					placeholder='Search by customer name or invoice number...'
+					placeholder={
+						documentType === "quotation"
+							? "Search by customer name or quotation number..."
+							: "Search by customer name or invoice number..."
+					}
 					fullWidth
 					slotProps={{
 						input: {
@@ -104,43 +110,45 @@ export default function BillToolbar({
 						</MenuItem>
 					))}
 				</Select>
-				<Select<PaymentStatus[]>
-					multiple
-					value={paymentStatuses}
-					onChange={(event) => {
-						const value = event.target.value;
-						const nextStatuses =
-							typeof value === "string"
-								? (value.split(",") as PaymentStatus[])
-								: (value as PaymentStatus[]);
-						onPaymentStatusesChange(nextStatuses);
-					}}
-					renderValue={(selected) => {
-						if (!selected || selected.length === 0) {
-							return "All Statuses";
+				{documentType !== "quotation" && (
+					<Select<PaymentStatus[]>
+						multiple
+						value={paymentStatuses}
+						onChange={(event) => {
+							const value = event.target.value;
+							const nextStatuses =
+								typeof value === "string"
+									? (value.split(",") as PaymentStatus[])
+									: (value as PaymentStatus[]);
+							onPaymentStatusesChange(nextStatuses);
+						}}
+						renderValue={(selected) => {
+							if (!selected || selected.length === 0) {
+								return "All Statuses";
+							}
+							return selected
+								.map((status) => paymentStatusLabels[status] || status)
+								.join(", ");
+						}}
+						displayEmpty
+						startAdornment={
+							<InputAdornment position='start'>
+								<FilterListOutlined />
+							</InputAdornment>
 						}
-						return selected
-							.map((status) => paymentStatusLabels[status] || status)
-							.join(", ");
-					}}
-					displayEmpty
-					startAdornment={
-						<InputAdornment position='start'>
-							<FilterListOutlined />
-						</InputAdornment>
-					}
-					sx={{ minWidth: { sm: 190 } }}
-				>
-					{paymentStatusOptions.map((option) => (
-						<MenuItem key={option.value} value={option.value}>
-							<Checkbox
-								checked={paymentStatuses.includes(option.value)}
-								size='small'
-							/>
-							<ListItemText primary={option.label} />
-						</MenuItem>
-					))}
-				</Select>
+						sx={{ minWidth: { sm: 190 } }}
+					>
+						{paymentStatusOptions.map((option) => (
+							<MenuItem key={option.value} value={option.value}>
+								<Checkbox
+									checked={paymentStatuses.includes(option.value)}
+									size='small'
+								/>
+								<ListItemText primary={option.label} />
+							</MenuItem>
+						))}
+					</Select>
+				)}
 			</Stack>
 			{dateFilter === "custom" && (
 				<Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
