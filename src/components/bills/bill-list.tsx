@@ -2,7 +2,6 @@ import {
 	Box,
 	Button,
 	Card,
-	CardContent,
 	CircularProgress,
 	Stack,
 	Typography,

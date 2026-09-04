@@ -16,6 +16,7 @@ import {
 	ReceiptLongOutlined,
 	LogoutOutlined,
 	HistoryOutlined,
+	CalendarTodayOutlined,
 } from "@mui/icons-material";
 
 import { usePathname, useRouter } from "next/navigation";
@@ -41,6 +42,11 @@ const navigationItems = [
 		label: "History",
 		href: "/bills",
 		icon: <HistoryOutlined fontSize='small' />,
+	},
+	{
+		label: "Schedule",
+		href: "/schedule",
+		icon: <CalendarTodayOutlined fontSize='small' />,
 	},
 ];
 

@@ -17,7 +17,8 @@ export async function updateSession(request: NextRequest) {
 				},
 
 				setAll(cookiesToSet) {
-					cookiesToSet.forEach(({ name, value, options }) => {
+					// eslint-disable-next-line @typescript-eslint/no-unused-vars
+					cookiesToSet.forEach(({ name, value, options: _o }) => {
 						request.cookies.set(name, value);
 					});
 
@@ -37,7 +38,7 @@ export async function updateSession(request: NextRequest) {
 
 	const pathname = request.nextUrl.pathname;
 
-	const protectedRoutes = ["/dashboard", "/products", "/billing", "/settings"];
+	const protectedRoutes = ["/dashboard", "/products", "/billing", "/settings", "/bills", "/schedule"];
 
 	const isProtectedRoute = protectedRoutes.some(
 		(route) => pathname === route || pathname.startsWith(`${route}/`),
