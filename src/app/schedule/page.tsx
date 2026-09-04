@@ -238,6 +238,347 @@ function VisitFormDialog({ open, onClose, onSave, initialData, title, saving }: 
 	);
 }
 
+// ─── Appointment Details Dialog ──────────────────────────────────────────────
+
+interface AppointmentDetailsDialogProps {
+	appt: Appointment | null;
+	open: boolean;
+	onClose: () => void;
+	onEdit: (appt: Appointment) => void;
+	onDelete: (appt: Appointment) => void;
+}
+
+function AppointmentDetailsDialog({
+	appt,
+	open,
+	onClose,
+	onEdit,
+	onDelete,
+}: AppointmentDetailsDialogProps) {
+	if (!appt) return null;
+
+	const statusCfg = STATUS_CONFIG[appt.status];
+	const isOverdue = appt.visit_date < todayStr() && appt.status === "scheduled";
+
+	return (
+		<Dialog
+			open={open}
+			onClose={onClose}
+			maxWidth="sm"
+			fullWidth
+			slotProps={{
+				paper: {
+					sx: {
+						borderRadius: { xs: 2.5, sm: 3 },
+						border: "1px solid #E2E8F0",
+						boxShadow: "0 20px 45px -8px rgba(15, 31, 51, 0.16)",
+						overflow: "hidden",
+					},
+				},
+			}}
+		>
+			<DialogTitle sx={{ px: { xs: 2.5, sm: 3 }, pt: { xs: 2.5, sm: 3 }, pb: 1.5 }}>
+				<Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+					<Box sx={{ minWidth: 0, pr: 1.5 }}>
+						<Typography
+							variant="caption"
+							sx={{
+								color: "#64748B",
+								textTransform: "uppercase",
+								letterSpacing: "0.06em",
+								fontWeight: 700,
+								fontSize: "0.7rem",
+								display: "block",
+								mb: 0.5,
+							}}
+						>
+							Visit Details
+						</Typography>
+						<Typography
+							variant="h5"
+							sx={{
+								fontWeight: 800,
+								color: "#172033",
+								fontSize: { xs: "1.25rem", sm: "1.45rem" },
+								lineHeight: 1.25,
+								wordBreak: "break-word",
+							}}
+						>
+							{appt.customer_name}
+						</Typography>
+					</Box>
+					<IconButton
+						size="small"
+						onClick={onClose}
+						aria-label="Close"
+						sx={{
+							color: "#94A3B8",
+							p: 0.75,
+							mt: -0.5,
+							mr: -0.5,
+							"&:hover": { color: "#172033", bgcolor: "rgba(15, 31, 51, 0.06)" },
+						}}
+					>
+						<ClearOutlined sx={{ fontSize: 20 }} />
+					</IconButton>
+				</Stack>
+			</DialogTitle>
+
+			<DialogContent sx={{ px: { xs: 2.5, sm: 3 }, py: 1 }}>
+				<Stack spacing={2.25}>
+					{/* Status badge row */}
+					<Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", gap: 0.75 }}>
+						<Chip
+							label={statusCfg.label}
+							size="small"
+							sx={{
+								bgcolor: statusCfg.bg,
+								color: statusCfg.color,
+								fontWeight: 700,
+								fontSize: "0.75rem",
+								height: 24,
+								px: 0.5,
+							}}
+						/>
+						{isOverdue && (
+							<Chip
+								icon={<WarningAmberOutlined sx={{ fontSize: "13px !important" }} />}
+								label="Overdue"
+								size="small"
+								sx={{
+									bgcolor: "rgba(245, 158, 11, 0.1)",
+									color: "#B45309",
+									fontWeight: 700,
+									fontSize: "0.75rem",
+									height: 24,
+									px: 0.5,
+								}}
+							/>
+						)}
+					</Stack>
+
+					{/* Date & Time block */}
+					<Box
+						sx={{
+							p: { xs: 1.75, sm: 2 },
+							bgcolor: "#F8FAFC",
+							borderRadius: 2,
+							border: "1px solid #E2E8F0",
+						}}
+					>
+						<Grid container spacing={{ xs: 1.5, sm: 2 }}>
+							<Grid size={{ xs: 12, sm: 6 }}>
+								<Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+									<Box
+										sx={{
+											width: 36,
+											height: 36,
+											borderRadius: 1.5,
+											bgcolor: "rgba(255, 90, 0, 0.08)",
+											display: "flex",
+											alignItems: "center",
+											justifyContent: "center",
+											color: "#FF5A00",
+											flexShrink: 0,
+										}}
+									>
+										<CalendarTodayOutlined sx={{ fontSize: 18 }} />
+									</Box>
+									<Box sx={{ minWidth: 0 }}>
+										<Typography
+											variant="caption"
+											sx={{ color: "#64748B", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", display: "block" }}
+										>
+											Date
+										</Typography>
+										<Typography sx={{ fontWeight: 600, color: "#172033", fontSize: "0.875rem", lineHeight: 1.25 }}>
+											{formatDisplayDate(appt.visit_date)}
+										</Typography>
+									</Box>
+								</Stack>
+							</Grid>
+							<Grid size={{ xs: 12, sm: 6 }}>
+								<Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+									<Box
+										sx={{
+											width: 36,
+											height: 36,
+											borderRadius: 1.5,
+											bgcolor: "rgba(15, 31, 51, 0.06)",
+											display: "flex",
+											alignItems: "center",
+											justifyContent: "center",
+											color: "#0F1F33",
+											flexShrink: 0,
+										}}
+									>
+										<ScheduleOutlined sx={{ fontSize: 18 }} />
+									</Box>
+									<Box sx={{ minWidth: 0 }}>
+										<Typography
+											variant="caption"
+											sx={{ color: "#64748B", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", display: "block" }}
+										>
+											Time
+										</Typography>
+										<Typography sx={{ fontWeight: 600, color: "#172033", fontSize: "0.875rem", lineHeight: 1.25 }}>
+											{appt.visit_time ? formatTime(appt.visit_time) : "Time not set"}
+										</Typography>
+									</Box>
+								</Stack>
+							</Grid>
+						</Grid>
+					</Box>
+
+					{/* Location */}
+					<Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
+						<Box
+							sx={{
+								width: 32,
+								height: 32,
+								borderRadius: 1.5,
+								bgcolor: "rgba(100, 116, 139, 0.08)",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								color: "#64748B",
+								flexShrink: 0,
+								mt: 0.25,
+							}}
+						>
+							<LocationOnOutlined sx={{ fontSize: 18 }} />
+						</Box>
+						<Box sx={{ flex: 1, minWidth: 0 }}>
+							<Typography
+								variant="caption"
+								sx={{ color: "#64748B", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", display: "block" }}
+							>
+								Location / Address
+							</Typography>
+							<Typography
+								sx={{
+									fontWeight: 500,
+									color: appt.location ? "#172033" : "#94A3B8",
+									fontSize: "0.875rem",
+									lineHeight: 1.4,
+									wordBreak: "break-word",
+									mt: 0.25,
+								}}
+							>
+								{appt.location || "No location specified"}
+							</Typography>
+						</Box>
+					</Stack>
+
+					{/* Purpose / Notes */}
+					<Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
+						<Box
+							sx={{
+								width: 32,
+								height: 32,
+								borderRadius: 1.5,
+								bgcolor: "rgba(100, 116, 139, 0.08)",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								color: "#64748B",
+								flexShrink: 0,
+								mt: 0.25,
+							}}
+						>
+							<NotesOutlined sx={{ fontSize: 18 }} />
+						</Box>
+						<Box sx={{ flex: 1, minWidth: 0 }}>
+							<Typography
+								variant="caption"
+								sx={{ color: "#64748B", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", display: "block" }}
+							>
+								Purpose / Notes
+							</Typography>
+							<Typography
+								sx={{
+									fontWeight: 500,
+									color: appt.notes ? "#172033" : "#94A3B8",
+									fontSize: "0.875rem",
+									lineHeight: 1.45,
+									wordBreak: "break-word",
+									whiteSpace: "pre-wrap",
+									mt: 0.25,
+								}}
+							>
+								{appt.notes || "No notes added"}
+							</Typography>
+						</Box>
+					</Stack>
+				</Stack>
+			</DialogContent>
+
+			<DialogActions
+				sx={{
+					px: { xs: 2.5, sm: 3 },
+					pb: { xs: 2.5, sm: 3 },
+					pt: 2,
+					justifyContent: "space-between",
+					borderTop: "1px solid #F1F5F9",
+					mt: 1,
+				}}
+			>
+				<Button
+					variant="outlined"
+					color="error"
+					startIcon={<DeleteOutlined />}
+					onClick={() => {
+						onClose();
+						onDelete(appt);
+					}}
+					sx={{
+						borderColor: "#FCA5A5",
+						color: "#EF4444",
+						fontWeight: 600,
+						fontSize: "0.825rem",
+						"&:hover": { borderColor: "#EF4444", bgcolor: "rgba(239, 68, 68, 0.06)" },
+					}}
+				>
+					Delete
+				</Button>
+				<Stack direction="row" spacing={1}>
+					<Button
+						variant="outlined"
+						onClick={onClose}
+						sx={{
+							borderColor: "#CBD5E1",
+							color: "#64748B",
+							fontWeight: 600,
+							fontSize: "0.825rem",
+							"&:hover": { borderColor: "#94A3B8", bgcolor: "rgba(15, 31, 51, 0.04)" },
+						}}
+					>
+						Close
+					</Button>
+					<Button
+						variant="contained"
+						startIcon={<EditOutlined />}
+						onClick={() => {
+							onClose();
+							onEdit(appt);
+						}}
+						sx={{
+							bgcolor: "#FF5A00",
+							color: "#FFFFFF",
+							fontWeight: 600,
+							fontSize: "0.825rem",
+							boxShadow: "0 2px 8px rgba(255, 90, 0, 0.28)",
+							"&:hover": { bgcolor: "#E65100", boxShadow: "0 4px 12px rgba(255, 90, 0, 0.4)" },
+						}}
+					>
+						Edit
+					</Button>
+				</Stack>
+			</DialogActions>
+		</Dialog>
+	);
+}
+
 // ─── Appointment Card ────────────────────────────────────────────────────────
 
 interface AppointmentCardProps {
@@ -245,16 +586,18 @@ interface AppointmentCardProps {
 	onEdit: (appt: Appointment) => void;
 	onDelete: (appt: Appointment) => void;
 	onComplete: (appt: Appointment) => void;
+	onViewDetails?: (appt: Appointment) => void;
 	isOverdue?: boolean;
 }
 
-function AppointmentCard({ appt, onEdit, onDelete, onComplete, isOverdue }: AppointmentCardProps) {
+function AppointmentCard({ appt, onEdit, onDelete, onComplete, onViewDetails, isOverdue }: AppointmentCardProps) {
 	const statusCfg = STATUS_CONFIG[appt.status];
 	const isCompleted = appt.status === "completed";
 	const isCancelled = appt.status === "cancelled";
 
 	return (
 		<Card
+			onClick={() => onViewDetails?.(appt)}
 			sx={{
 				height: "100%",
 				display: "flex",
@@ -263,13 +606,15 @@ function AppointmentCard({ appt, onEdit, onDelete, onComplete, isOverdue }: Appo
 				border: isOverdue ? "1px solid rgba(245, 158, 11, 0.45)" : "1px solid #E2E8F0",
 				borderRadius: 2,
 				opacity: isCancelled ? 0.65 : 1,
-				transition: "all 1s cubic-bezier(0.4, 0, 0.2, 1)",
+				cursor: onViewDetails ? "pointer" : "default",
+				transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
 				"@media (prefers-reduced-motion: reduce)": {
 					transition: "none !important",
 				},
 				"&:hover": {
 					boxShadow: "0 4px 12px rgba(15, 31, 51, 0.08)",
 					borderColor: isOverdue ? "rgba(245, 158, 11, 0.65)" : "#CBD5E1",
+					transform: onViewDetails ? "translateY(-1px)" : "none",
 				},
 			}}
 		>
@@ -384,7 +729,8 @@ function AppointmentCard({ appt, onEdit, onDelete, onComplete, isOverdue }: Appo
 				{/* Bottom Action Buttons */}
 				<Stack
 					direction="row"
-					spacing={0.25}
+					spacing={{ xs: 0.5, sm: 0.25 }}
+					onClick={(e) => e.stopPropagation()}
 					sx={{
 						pt: 0.75,
 						borderTop: "1px solid #F1F5F9",
@@ -398,29 +744,50 @@ function AppointmentCard({ appt, onEdit, onDelete, onComplete, isOverdue }: Appo
 						<Tooltip title="Mark as Completed">
 							<IconButton
 								size="small"
-								onClick={() => onComplete(appt)}
-								sx={{ color: "#10B981", p: 0.4, "&:hover": { bgcolor: "rgba(16, 185, 129, 0.08)" } }}
+								onClick={(e) => {
+									e.stopPropagation();
+									onComplete(appt);
+								}}
+								sx={{
+									color: "#10B981",
+									p: { xs: 0.85, sm: 0.4 },
+									"&:hover": { bgcolor: "rgba(16, 185, 129, 0.08)" },
+								}}
 							>
-								<CheckCircleOutlined sx={{ fontSize: 16 }} />
+								<CheckCircleOutlined sx={{ fontSize: { xs: 20, sm: 16 } }} />
 							</IconButton>
 						</Tooltip>
 					)}
 					<Tooltip title="Edit">
 						<IconButton
 							size="small"
-							onClick={() => onEdit(appt)}
-							sx={{ color: "#64748B", p: 0.4, "&:hover": { bgcolor: "rgba(15, 31, 51, 0.06)", color: "#172033" } }}
+							onClick={(e) => {
+								e.stopPropagation();
+								onEdit(appt);
+							}}
+							sx={{
+								color: "#64748B",
+								p: { xs: 0.85, sm: 0.4 },
+								"&:hover": { bgcolor: "rgba(15, 31, 51, 0.06)", color: "#172033" },
+							}}
 						>
-							<EditOutlined sx={{ fontSize: 16 }} />
+							<EditOutlined sx={{ fontSize: { xs: 20, sm: 16 } }} />
 						</IconButton>
 					</Tooltip>
 					<Tooltip title="Delete">
 						<IconButton
 							size="small"
-							onClick={() => onDelete(appt)}
-							sx={{ color: "#64748B", p: 0.4, "&:hover": { bgcolor: "rgba(239, 68, 68, 0.08)", color: "#EF4444" } }}
+							onClick={(e) => {
+								e.stopPropagation();
+								onDelete(appt);
+							}}
+							sx={{
+								color: "#64748B",
+								p: { xs: 0.85, sm: 0.4 },
+								"&:hover": { bgcolor: "rgba(239, 68, 68, 0.08)", color: "#EF4444" },
+							}}
 						>
-							<DeleteOutlined sx={{ fontSize: 16 }} />
+							<DeleteOutlined sx={{ fontSize: { xs: 20, sm: 16 } }} />
 						</IconButton>
 					</Tooltip>
 				</Stack>
@@ -479,6 +846,7 @@ interface SectionProps {
 	onEdit: (appt: Appointment) => void;
 	onDelete: (appt: Appointment) => void;
 	onComplete: (appt: Appointment) => void;
+	onViewDetails?: (appt: Appointment) => void;
 	accentColor?: string;
 	isOverdue?: boolean;
 	emptyMessage?: string;
@@ -494,6 +862,7 @@ function Section({
 	onEdit,
 	onDelete,
 	onComplete,
+	onViewDetails,
 	accentColor = "#FF5A00",
 	isOverdue,
 	emptyMessage,
@@ -607,6 +976,7 @@ function Section({
 								onEdit={onEdit}
 								onDelete={onDelete}
 								onComplete={onComplete}
+								onViewDetails={onViewDetails}
 								isOverdue={isOverdue && appt.status === "scheduled"}
 							/>
 						</Grid>
@@ -631,6 +1001,7 @@ function Section({
 										onEdit={onEdit}
 										onDelete={onDelete}
 										onComplete={onComplete}
+										onViewDetails={onViewDetails}
 										isOverdue={isOverdue && appt.status === "scheduled"}
 									/>
 								</Grid>
@@ -750,6 +1121,7 @@ function Section({
 												onEdit={onEdit}
 												onDelete={onDelete}
 												onComplete={onComplete}
+												onViewDetails={onViewDetails}
 												isOverdue={isOverdue && appt.status === "scheduled"}
 											/>
 										</Grid>
@@ -857,6 +1229,7 @@ function CollapsibleSection({
 	onEdit,
 	onDelete,
 	onComplete,
+	onViewDetails,
 	accentColor = "#0F1F33",
 	isOverdue,
 	defaultExpanded = false,
@@ -911,7 +1284,14 @@ function CollapsibleSection({
 				<Grid container spacing={{ xs: 1.5, sm: 2 }}>
 					{appointments.map((appt) => (
 						<Grid key={appt.id} size={{ xs: 6, sm: 6, md: 4, lg: 3 }}>
-							<AppointmentCard appt={appt} onEdit={onEdit} onDelete={onDelete} onComplete={onComplete} isOverdue={isOverdue && appt.status === "scheduled"} />
+							<AppointmentCard
+								appt={appt}
+								onEdit={onEdit}
+								onDelete={onDelete}
+								onComplete={onComplete}
+								onViewDetails={onViewDetails}
+								isOverdue={isOverdue && appt.status === "scheduled"}
+							/>
 						</Grid>
 					))}
 				</Grid>
@@ -942,6 +1322,9 @@ export default function SchedulePage() {
 	const [deletingAppt, setDeletingAppt] = useState<Appointment | null>(null);
 	const [deleteLoading, setDeleteLoading] = useState(false);
 	const [deleteError, setDeleteError] = useState("");
+
+	// Details dialog
+	const [viewingAppt, setViewingAppt] = useState<Appointment | null>(null);
 
 	useEffect(() => {
 		let mounted = true;
@@ -1210,6 +1593,7 @@ export default function SchedulePage() {
 										onEdit={handleOpenEdit}
 										onDelete={setDeletingAppt}
 										onComplete={handleComplete}
+										onViewDetails={setViewingAppt}
 										isOverdue={appt.visit_date < today && appt.status === "scheduled"}
 									/>
 								</Grid>
@@ -1229,6 +1613,7 @@ export default function SchedulePage() {
 							onEdit={handleOpenEdit}
 							onDelete={setDeletingAppt}
 							onComplete={handleComplete}
+							onViewDetails={setViewingAppt}
 							accentColor="#D97706"
 							isOverdue
 							compactRow
@@ -1243,6 +1628,7 @@ export default function SchedulePage() {
 							onEdit={handleOpenEdit}
 							onDelete={setDeletingAppt}
 							onComplete={handleComplete}
+							onViewDetails={setViewingAppt}
 							accentColor="#FF5A00"
 							showEmpty
 							emptyMessage="No visits scheduled for today."
@@ -1256,6 +1642,7 @@ export default function SchedulePage() {
 							onEdit={handleOpenEdit}
 							onDelete={setDeletingAppt}
 							onComplete={handleComplete}
+							onViewDetails={setViewingAppt}
 							accentColor="#4F46E5"
 							showEmpty
 							emptyMessage="No visits scheduled for tomorrow."
@@ -1270,6 +1657,7 @@ export default function SchedulePage() {
 							onEdit={handleOpenEdit}
 							onDelete={setDeletingAppt}
 							onComplete={handleComplete}
+							onViewDetails={setViewingAppt}
 							accentColor="#0F1F33"
 							defaultExpanded={upcomingAppts.length > 0 && upcomingAppts.length <= 6}
 						/>
@@ -1290,6 +1678,7 @@ export default function SchedulePage() {
 							onEdit={handleOpenEdit}
 							onDelete={setDeletingAppt}
 							onComplete={handleComplete}
+							onViewDetails={setViewingAppt}
 							accentColor="#059669"
 						/>
 
@@ -1300,6 +1689,7 @@ export default function SchedulePage() {
 							onEdit={handleOpenEdit}
 							onDelete={setDeletingAppt}
 							onComplete={handleComplete}
+							onViewDetails={setViewingAppt}
 							accentColor="#94A3B8"
 						/>
 					</Stack>
@@ -1310,6 +1700,15 @@ export default function SchedulePage() {
 			{formError && !formOpen && (
 				<Alert severity="error" onClose={() => setFormError("")} sx={{ mt: 2 }}>{formError}</Alert>
 			)}
+
+			{/* Appointment Details Dialog */}
+			<AppointmentDetailsDialog
+				open={!!viewingAppt}
+				appt={viewingAppt}
+				onClose={() => setViewingAppt(null)}
+				onEdit={handleOpenEdit}
+				onDelete={setDeletingAppt}
+			/>
 
 			{/* Add / Edit Dialog */}
 			<VisitFormDialog
