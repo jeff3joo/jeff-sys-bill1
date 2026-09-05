@@ -4,44 +4,44 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 const invoiceLayout = {
 	customer: {
 		name: {
-			x: 35,
-			y: 660,
+			x: 15,
+			y: 600,
 		},
 		phone: {
-			x: 35,
-			y: 645,
+			x: 15,
+			y: 585,
 		},
 		address: {
-			x: 315,
-			y: 660,
+			x: 295,
+			y: 600,
 		},
 	},
 
 	invoice: {
 		number: {
-			x: 480,
-			y: 700,
+			x: 460,
+			y: 660,
 		},
 		date: {
-			x: 480,
-			y: 685,
+			x: 460,
+			y: 645,
 		},
 	},
 
 	items: {
-		startY: 600,
+		startY: 540,
 		minRowHeight: 24,
-		endY: 250,
-		nameMaxWidth: 180,
+		endY: 240,
+		nameMaxWidth: 200,
 		totalsHeight: 120,
 
 		columns: {
-			name: 35,
-			qty: 273,
-			amount: 375,
-			tax: 435,
-			discount: 500,
-			total: 558,
+			name: 15,
+			qty: 263,
+			amount: 335,
+			tax: 415,
+			discount: 480,
+			total: 568,
 		},
 	},
 	fontSize: 9,
@@ -83,10 +83,20 @@ const roundMoney = (value: number) =>
 	Math.round((value + Number.EPSILON) * 100) / 100;
 
 export async function createInvoicePdf(invoice: InvoicePdfData) {
-	const response = await fetch("/templates/invoice-template.pdf");
+	const isQuotation =
+		invoice.documentType === "quotation" ||
+		invoice.invoiceNumber?.startsWith("QT-");
+
+	const templatePath = isQuotation
+		? "/templates/quotation-template.pdf"
+		: "/templates/invoice-template.pdf";
+
+	const response = await fetch(templatePath);
 
 	if (!response.ok) {
-		throw new Error("Failed to load invoice template");
+		throw new Error(
+			`Failed to load ${isQuotation ? "quotation" : "invoice"} template`,
+		);
 	}
 
 	const templateBytes = await response.arrayBuffer();
@@ -95,7 +105,9 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 	const pages = pdfDoc.getPages();
 
 	if (pages.length === 0) {
-		throw new Error("Invoice template has no pages");
+		throw new Error(
+			`${isQuotation ? "Quotation" : "Invoice"} template has no pages`,
+		);
 	}
 
 	const firstPage = pages[0];
@@ -105,40 +117,9 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 	const italicFont = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
 	const { customer, invoice: invoiceLayoutData } = invoiceLayout;
 
-	const isQuotation =
-		invoice.documentType === "quotation" ||
-		invoice.invoiceNumber?.startsWith("QT-");
-
 	const invoiceNumberText = isQuotation
-		? `Quotation No: ${invoice.invoiceNumber}`
-		: `Invoice: ${invoice.invoiceNumber}`;
-
-	const drawDocumentHeader = (
-		pageToDraw: ReturnType<PDFDocument["getPages"]>[number],
-	) => {
-		if (isQuotation) {
-			pageToDraw.drawRectangle({
-				x: 340,
-				y: 715,
-				width: 230,
-				height: 40,
-				color: rgb(1, 1, 1),
-			});
-
-			const title = "QUOTATION";
-			const titleSize = 14;
-			const titleWidth = boldFont.widthOfTextAtSize(title, titleSize);
-			pageToDraw.drawText(title, {
-				x: 560 - titleWidth,
-				y: 728,
-				size: titleSize,
-				font: boldFont,
-				color: rgb(0, 0, 0),
-			});
-		}
-	};
-
-	drawDocumentHeader(firstPage);
+		? `Quotation Number: ${invoice.invoiceNumber}`
+		: `Invoice Number: ${invoice.invoiceNumber}`;
 
 	const wrapText = (text: string, maxWidth: number, fontSize: number) => {
 		const words = text.split(/\s+/);
@@ -369,9 +350,9 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 
 		// Draw table header background bar (#383838)
 		page.drawRectangle({
-			x: 30,
+			x: 10,
 			y: y - 6,
-			width: 535,
+			width: 575,
 			height: 20,
 			color: rgb(56 / 255, 56 / 255, 56 / 255),
 		});
@@ -463,11 +444,11 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 
 		page.drawLine({
 			start: {
-				x: 35,
+				x: 15,
 				y: subtotalY + 12,
 			},
 			end: {
-				x: 560,
+				x: 580,
 				y: subtotalY + 12,
 			},
 			thickness: 0.5,
@@ -536,19 +517,19 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 
 		page.drawLine({
 			start: {
-				x: 35,
+				x: 15,
 				y: subtotalY - 8,
 			},
 			end: {
-				x: 560,
+				x: 580,
 				y: subtotalY - 8,
 			},
 			thickness: 0.5,
 			color: rgb(0.5, 0.5, 0.5),
 		});
 
-		const summaryLabelX = 390;
-		const summaryAmountX = 558;
+		const summaryLabelX = 400;
+		const summaryAmountX = 568;
 
 		const taxableY = 260;
 		const cgstY = 240;
@@ -586,9 +567,9 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 		drawSummaryRow("SGST @9%", sgst, sgstY);
 
 		page.drawRectangle({
-			x: 30,
+			x: 10,
 			y: totalY - 6,
-			width: 535,
+			width: 575,
 			height: 20,
 			color: rgb(56 / 255, 56 / 255, 56 / 255),
 		});
@@ -608,7 +589,7 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 		const amountInWordsText = `Amount in Words: ${amountInWords}`;
 
 		page.drawText(amountInWordsText, {
-			x: 35,
+			x: 15,
 			y: 200,
 			size: 8,
 			font: boldFont,
@@ -648,8 +629,6 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 			pdfDoc.addPage(copiedPage);
 			page = copiedPage;
 
-			drawDocumentHeader(page);
-
 			page.drawText(invoiceNumberText, {
 				x: invoiceLayoutData.number.x,
 				y: invoiceLayoutData.number.y,
@@ -688,11 +667,11 @@ export async function createInvoicePdf(invoice: InvoicePdfData) {
 
 			page.drawLine({
 				start: {
-					x: 35,
+					x: 15,
 					y: 190,
 				},
 				end: {
-					x: 560,
+					x: 580,
 					y: 190,
 				},
 				thickness: 0.5,
